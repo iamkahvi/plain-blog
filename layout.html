@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{if ne .Kind "home"}}{{lower .Title}} | {{end}}kahvi patel</title>
+  <title>{{if ne .Kind "home"}}{{.Title}} | {{end}}kahvi patel</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -17,14 +17,14 @@
       <h1>kahvi patel</h1>
       {{.Article.Body}}
       <h2>recent writing</h2>
-      {{template "list" .Articles}}
+      {{template "list" .}}
       <p><a href="/writing/">all writing →</a></p>
     {{else if eq .Kind "writing"}}
       <h1>writing</h1>
-      {{template "list" .Articles}}
+      {{template "list" .}}
     {{else}}
       <article>
-        <h1>{{lower .Article.Title}}</h1>
+        <h1>{{.Article.Title}}</h1>
         {{if .Article.Date}}<p><time datetime="{{.Article.Date}}">{{date .Article.Date}}</time></p>{{end}}
         {{.Article.Body}}
       </article>
@@ -33,9 +33,12 @@
 </body>
 </html>
 {{define "list"}}
-<ul class="articles">
-  {{range .}}
-    <li><time datetime="{{.Date}}">{{.Date}}</time> <a href="{{.URL}}">{{lower .Title}}</a> <small>{{.Kind}}</small></li>
-  {{end}}
-</ul>
+{{range .Years}}
+  {{if eq $.Kind "home"}}<h3>{{.Year}}</h3>{{else}}<h2>{{.Year}}</h2>{{end}}
+  <ul class="articles">
+    {{range .Articles}}
+      <li><a href="{{.URL}}">{{.Title}}</a> - <time datetime="{{.Date}}">{{shortDate .Date}}</time></li>
+    {{end}}
+  </ul>
+{{end}}
 {{end}}

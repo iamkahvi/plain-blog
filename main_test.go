@@ -32,6 +32,7 @@ func fixture(t *testing.T) string {
 	put(t, root, "content/posts/first.md", "---\ntitle: 'First & best'\ndate: 2020-01-01\n---\n[Section](#ui-design)\n\n## UI Design\n")
 	put(t, root, "content/posts/draft.md", "---\ntitle: Draft\ndate: 2024-01-01\npublished: false\n---\nPrivate\n")
 	put(t, root, "content/newsletter/latest.md", "---\ntitle: Latest\ndate: 2026-04-16\n---\nNews\n")
+	put(t, root, "content/newsletter/february.md", "---\ntitle: February 2026\ndate: 2026-03-13\n---\nNews\n")
 	put(t, root, "public/assets/photo.txt", "photo")
 	return root
 }
@@ -53,18 +54,27 @@ func TestBuild(t *testing.T) {
 		}
 	}
 	writing := string(files["/writing/"])
-	if strings.Contains(writing, "draft") || !strings.Contains(writing, "first &amp; best") || strings.Index(writing, "latest") > strings.Index(writing, "first &amp; best") {
+	if strings.Contains(writing, "Draft") || !strings.Contains(writing, "First &amp; best") || strings.Index(writing, "Latest") > strings.Index(writing, "First &amp; best") {
 		t.Errorf("unexpected list: %s", writing)
+	}
+	if strings.Count(writing, "<h2>2026</h2>") != 1 || !strings.Contains(writing, "<h2>2020</h2>") ||
+		!strings.Contains(writing, `<a href="/writing/february/">February 2026</a> - <time datetime="2026-03-13">03.13</time>`) ||
+		strings.Contains(writing, "<small>") {
+		t.Errorf("unexpected year groups or list format: %s", writing)
+	}
+	home := string(files["/"])
+	if !strings.Contains(home, "<h3>2026</h3>") || !strings.Contains(home, `>February 2026</a> - <time datetime="2026-03-13">03.13</time>`) {
+		t.Error("home list does not show grouped dates")
 	}
 	if !strings.Contains(string(files["/about/"]), "Hello <strong>world</strong>") || !strings.Contains(string(files["/pronounce/"]), "<audio controls>") {
 		t.Error("Markdown or trusted HTML was not rendered")
 	}
 	post := string(files["/writing/first/"])
-	if !strings.Contains(post, "<title>first &amp; best | kahvi patel</title>") ||
-		!strings.Contains(post, "<h1>first &amp; best</h1>") ||
+	if !strings.Contains(post, "<title>First &amp; best | kahvi patel</title>") ||
+		!strings.Contains(post, "<h1>First &amp; best</h1>") ||
 		!strings.Contains(post, `<a href="#ui-design">Section</a>`) ||
-		!strings.Contains(post, `<h2 id="ui-design">ui design</h2>`) {
-		t.Error("site text or heading links were not rendered")
+		!strings.Contains(post, `<h2 id="ui-design">UI Design</h2>`) {
+		t.Error("content case or heading links were not preserved")
 	}
 	if !strings.Contains(post, `<a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/about/">about</a>`) {
 		t.Error("navigation order is incorrect")
@@ -119,8 +129,8 @@ A footnote.[^1]
 	}
 	body := string(a.Body)
 	for _, want := range []string{
-		`<h2 id="heading-linkhttpsexamplecomupper-amp-code">heading <a href="https://example.com/UPPER">link</a> &amp; <code>CODE</code></h2>`,
-		`<h3>raw <em>heading</em> <code>CODE</code></h3>`, "<strong>bold</strong>", "<em>italic</em>",
+		`<h2 id="heading-linkhttpsexamplecomupper-amp-code">Heading <a href="https://example.com/UPPER">LINK</a> &amp; <code>CODE</code></h2>`,
+		`<h3>RAW <em>HEADING</em> <code>CODE</code></h3>`, "<strong>bold</strong>", "<em>italic</em>",
 		`<a href="https://example.com">link</a>`, `<img src="/photo.jpg" alt="photo">`,
 		"<li>First\n<ul>\n<li>Nested</li>", "<blockquote>", "<table>", "<td>two</td>",
 		`<code class="language-go">if a &lt; b {}`, `href="#fn:1"`,

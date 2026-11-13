@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	stdhtml "html"
 	"html/template"
-	"io"
 	"io/fs"
 	"log"
 	"mime"
@@ -23,7 +21,6 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
-	xhtml "golang.org/x/net/html"
 	"gopkg.in/yaml.v3"
 )
 
@@ -31,13 +28,17 @@ type article struct {
 	Title, Description, Date, URL string
 	Published                     *bool
 	Body                          template.HTML
-	Kind                          string
+}
+
+type yearGroup struct {
+	Year     string
+	Articles []article
 }
 
 type page struct {
 	Title, Kind string
 	Article     article
-	Articles    []article
+	Years       []yearGroup
 }
 
 var markdown = goldmark.New(
@@ -71,61 +72,27 @@ func readArticle(file, url, kind string) (article, error) {
 	if err := markdown.Convert(parts[2], &body); err != nil {
 		return a, fmt.Errorf("%s: %w", file, err)
 	}
-	lower, err := lowerHeadings(body.Bytes())
-	if err != nil {
-		return a, fmt.Errorf("%s: %w", file, err)
-	}
-	a.Body, a.URL, a.Kind = template.HTML(lower), url, kind // Content is trusted source HTML.
+	a.Body, a.URL = template.HTML(body.String()), url // Content is trusted source HTML.
 	return a, nil
 }
 
-func lowerHeadings(body []byte) (string, error) {
-	z := xhtml.NewTokenizer(bytes.NewReader(body))
-	var out bytes.Buffer
-	heading, code := 0, 0
-	for {
-		token := z.Next()
-		switch token {
-		case xhtml.ErrorToken:
-			if z.Err() == io.EOF {
-				return out.String(), nil
-			}
-			return "", z.Err()
-		case xhtml.StartTagToken, xhtml.EndTagToken:
-			name, _ := z.TagName()
-			tag := string(name)
-			delta := 1
-			if token == xhtml.EndTagToken {
-				delta = -1
-			}
-			if len(tag) == 2 && tag[0] == 'h' && tag[1] >= '1' && tag[1] <= '6' {
-				if delta > 0 || heading > 0 {
-					heading += delta
-				}
-				if heading == 0 {
-					code = 0
-				}
-			}
-			if heading > 0 && (tag == "code" || tag == "pre" || tag == "script" || tag == "style") && (delta > 0 || code > 0) {
-				code += delta
-			}
-			out.Write(z.Raw())
-		case xhtml.TextToken:
-			if heading > 0 && code == 0 {
-				out.WriteString(stdhtml.EscapeString(strings.ToLower(string(z.Text()))))
-			} else {
-				out.Write(z.Raw())
-			}
-		default:
-			out.Write(z.Raw())
+func groupByYear(articles []article) []yearGroup {
+	var years []yearGroup
+	for _, a := range articles {
+		year := a.Date[:4]
+		if len(years) == 0 || years[len(years)-1].Year != year {
+			years = append(years, yearGroup{Year: year})
 		}
+		last := &years[len(years)-1]
+		last.Articles = append(last.Articles, a)
 	}
+	return years
 }
 
 // build returns URL paths and their contents. It does not modify the output directory.
 func build(root string) (map[string][]byte, error) {
 	layout, err := template.New("layout.html").Funcs(template.FuncMap{
-		"lower": strings.ToLower,
+		"shortDate": func(value string) string { return value[5:7] + "." + value[8:10] },
 		"date": func(value string) (string, error) {
 			d, err := time.Parse("2006-01-02", value)
 			return strings.ToLower(d.Format("January 2, 2006")), err
@@ -166,10 +133,8 @@ func build(root string) (map[string][]byte, error) {
 		return nil, err
 	}
 	var articles []article
-	for _, group := range []struct{ dir, prefix, kind string }{
-		{"posts", "/writing/", "post"}, {"newsletter", "/writing/", "newsletter"},
-	} {
-		matches, err := filepath.Glob(filepath.Join(root, "content", group.dir, "*.md"))
+	for _, dir := range []string{"posts", "newsletter"} {
+		matches, err := filepath.Glob(filepath.Join(root, "content", dir, "*.md"))
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +143,7 @@ func build(root string) (map[string][]byte, error) {
 			if slug == "" || slug == "." || slug == ".." {
 				return nil, fmt.Errorf("%s: invalid filename", file)
 			}
-			a, err := readArticle(file, group.prefix+slug+"/", group.kind)
+			a, err := readArticle(file, "/writing/"+slug+"/", "article")
 			if err != nil {
 				return nil, err
 			}
@@ -205,10 +170,10 @@ func build(root string) (map[string][]byte, error) {
 		url string
 		p   page
 	}{
-		{"/", page{Title: "Home", Kind: "home", Article: about, Articles: recent}},
+		{"/", page{Title: "home", Kind: "home", Article: about, Years: groupByYear(recent)}},
 		{"/about/", page{Title: about.Title, Kind: "page", Article: about}},
 		{"/pronounce/", page{Title: pronounce.Title, Kind: "page", Article: pronounce}},
-		{"/writing/", page{Title: "Writing", Kind: "writing", Articles: articles}},
+		{"/writing/", page{Title: "writing", Kind: "writing", Years: groupByYear(articles)}},
 	} {
 		if err := render(item.url, item.p); err != nil {
 			return nil, err
