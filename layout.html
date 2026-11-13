@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{if ne .Kind "home"}}{{lower .Title}} | {{end}}kahvi patel</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <nav aria-label="main navigation">
+      <a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/about/">about</a>
+    </nav>
+  </header>
+  <main>
+    {{if eq .Kind "home"}}
+      <h1>kahvi patel</h1>
+      {{.Article.Body}}
+      <h2>recent writing</h2>
+      {{template "list" .Articles}}
+      <p><a href="/writing/">all writing →</a></p>
+    {{else if eq .Kind "writing"}}
+      <h1>writing</h1>
+      {{template "list" .Articles}}
+    {{else}}
+      <article>
+        <h1>{{lower .Article.Title}}</h1>
+        {{if .Article.Date}}<p><time datetime="{{.Article.Date}}">{{date .Article.Date}}</time></p>{{end}}
+        {{.Article.Body}}
+      </article>
+    {{end}}
+  </main>
+</body>
+</html>
+{{define "list"}}
+<ul class="articles">
+  {{range .}}
+    <li><time datetime="{{.Date}}">{{.Date}}</time> <a href="{{.URL}}">{{lower .Title}}</a> <small>{{.Kind}}</small></li>
+  {{end}}
+</ul>
+{{end}}

@@ -1,0 +1,16 @@
+body {
+  margin: 2.5rem auto;
+  max-width: 650px;
+  padding: 0 1rem;
+  color: #222;
+  background: #fff;
+  font: 1rem/1.6 Times, "Times New Roman", serif;
+}
+h1, h2, h3 { line-height: 1.2; }
+a { color: #174ea6; }
+img, video, iframe { max-width: 100%; }
+pre { overflow-x: auto; }
+blockquote { margin-left: 1.5rem; padding-left: 1rem; border-left: 2px solid #ccc; }
+.articles { padding-left: 1.2rem; }
+.articles li { margin: .35rem 0; }
+time, small { color: #555; }

@@ -4,7 +4,7 @@ description: about Karl Popper
 date: 2018-09-10
 ---
 
-I’ve been going through old papers of mine recently and this one struck me as interesting enough to share. I wrote a barebones [post](/on-behavioural-economics/) on this subject.
+I’ve been going through old papers of mine recently and this one struck me as interesting enough to share. I wrote a barebones [post](/writing/on-behavioural-economics/) on this subject.
 
 <div class="academic">
 <p>
