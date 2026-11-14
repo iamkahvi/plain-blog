@@ -35,6 +35,11 @@ func fixture(t *testing.T) string {
 	put(t, root, "content/about/about.md", "---\ntitle: about\n---\nHello **world**.\n")
 	put(t, root, "content/projects/projects.md", "---\ntitle: projects\n---\n- https://example.com\n")
 	put(t, root, "content/pronounce/pronounce.md", "---\ntitle: pronounce\n---\n<audio controls></audio>\n")
+	put(t, root, "content/book-shelf/book-shelf.md", "---\ntitle: book shelf\n---\nBooks I have read.\n")
+	put(t, root, "content/book-shelf/books/older.md", "---\ntitle: Older Book\nauthor: First Author\ndate: 2020-01-01\n---\nOlder notes.\n")
+	put(t, root, "content/book-shelf/books/newer.md", "---\ntitle: \"A Newer's Book\"\nauthor: Second Author\ndate: 2026-04-25\n---\n**Newer notes.**\n")
+	put(t, root, "content/book-shelf/books/middle.md", "---\ntitle: Middle Book\nauthor: Third Author\ndate: 2026-02-02\n---\nMiddle notes.\n")
+	put(t, root, "content/book-shelf/books/oldest.md", "---\ntitle: Oldest Book\nauthor: Fourth Author\ndate: 2018-12-31\n---\nOldest notes.\n")
 	put(t, root, "content/posts/first.md", "---\ntitle: 'First & best'\ndate: 2020-01-01\n---\n[Section](#ui-design)\n\n## UI Design\n")
 	put(t, root, "content/posts/draft.md", "---\ntitle: Draft\ndate: 2024-01-01\npublished: false\n---\nPrivate\n")
 	put(t, root, "content/newsletter/latest.md", "---\ntitle: Latest\ndate: 2026-04-16\n---\nNews\n")
@@ -49,7 +54,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, url := range []string{"/", "/about/", "/projects/", "/pronounce/", "/writing/", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/color-theme.js", "/assets/photo.txt"} {
+	for _, url := range []string{"/", "/about/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/color-theme.js", "/assets/photo.txt"} {
 		if _, ok := files[url]; !ok {
 			t.Errorf("missing %s", url)
 		}
@@ -93,7 +98,7 @@ func TestBuild(t *testing.T) {
 	if !strings.Contains(post, "<header class=\"article-header\">\n        <h1>First &amp; best</h1>\n        <time datetime=\"2020-01-01\">january 1, 2020</time>\n        </header>\n        <p><a href=\"#ui-design\">Section</a></p>") {
 		t.Error("article header is incorrect")
 	}
-	if !strings.Contains(post, `<a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/projects/">projects</a> · <a href="/about/">about</a> <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>`) ||
+	if !strings.Contains(post, `<a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/book-shelf/">book shelf</a> · <a href="/projects/">projects</a> <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>`) ||
 		!strings.Contains(post, `<script src="/color-theme.js"></script>`) {
 		t.Error("theme control or existing navigation is missing")
 	}
@@ -120,6 +125,56 @@ func TestBuild(t *testing.T) {
 	}
 	if data, err := os.ReadFile(filepath.Join(root, "dist/writing/latest/index.html")); err != nil || !strings.Contains(string(data), "News") {
 		t.Errorf("invalid output: %v", err)
+	}
+}
+
+func TestBookID(t *testing.T) {
+	for title, want := range map[string]string{
+		"The Autobiography of Malcolm X ": "the-autobiography-of-malcolm-x-",
+		"Daisy Jones & The Six":           "daisy-jones-&-the-six",
+		"Cat's Cradle":                    "cats-cradle",
+	} {
+		if got := bookID(title); got != want {
+			t.Errorf("bookID(%q) = %q, want %q", title, got, want)
+		}
+	}
+}
+
+func TestBookShelf(t *testing.T) {
+	root := fixture(t)
+	files, err := build(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(files["/book-shelf/"])
+	for _, want := range []string{
+		"<h1>book shelf</h1>", "Books I have read.", "<h2>2026</h2>", "<h2>2020</h2>",
+		`id="a-newers-book"`,
+		`<header class="book-header"><h3><a href="#a-newers-book">A Newer&#39;s Book</a></h3> <span>by Second Author · <time datetime="2026-04-25">04.25</time></span></header>`,
+		"<strong>Newer notes.</strong>",
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("book shelf lacks %q", want)
+		}
+	}
+	newer, middle, older, oldest := strings.Index(page, "A Newer&#39;s Book"), strings.Index(page, "Middle Book"), strings.Index(page, "Older Book"), strings.Index(page, "Oldest Book")
+	if strings.Count(page, "<h2>2026</h2>") != 1 || newer < 0 || newer >= middle || middle >= older || older >= oldest {
+		t.Error("books are not in descending date order")
+	}
+	if !strings.Contains(page, "<h2>2018</h2>") || strings.Contains(page, `datetime="2018-12-31"`) {
+		t.Error("dates before 2019 should not be displayed")
+	}
+	put(t, root, "content/book-shelf/books/bad.md", "---\ntitle: Bad\ndate: 2026-01-01\n---\nNotes\n")
+	if _, err := build(root); err == nil || !strings.Contains(err.Error(), "missing author") {
+		t.Fatalf("missing author accepted: %v", err)
+	}
+	put(t, root, "content/book-shelf/books/bad.md", "---\ntitle: Bad\nauthor: Author\ndate: invalid\n---\nNotes\n")
+	if _, err := build(root); err == nil || !strings.Contains(err.Error(), "invalid date") {
+		t.Fatalf("invalid date accepted: %v", err)
+	}
+	put(t, root, "content/book-shelf/books/bad.md", "---\ntitle: \"A Newers Book\"\nauthor: Author\ndate: 2026-01-01\n---\nNotes\n")
+	if _, err := build(root); err == nil || !strings.Contains(err.Error(), "duplicate book anchor") {
+		t.Fatalf("duplicate anchor accepted: %v", err)
 	}
 }
 

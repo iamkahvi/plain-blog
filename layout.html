@@ -10,7 +10,7 @@
 <body>
   <header>
     <nav aria-label="main navigation">
-      <a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/projects/">projects</a> · <a href="/about/">about</a> <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>
+      <a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/book-shelf/">book shelf</a> · <a href="/projects/">projects</a> <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>
     </nav>
   </header>
   <main>
@@ -23,6 +23,20 @@
     {{else if eq .Kind "writing"}}
       <h1>writing</h1>
       {{template "list" .}}
+    {{else if eq .Kind "books"}}
+      <h1>{{.Article.Title}}</h1>
+      {{.Article.Body}}
+      {{range .BookYears}}
+        <section class="book-year">
+          <h2>{{.Year}}</h2>
+          {{range .Books}}
+            <article class="book" id="{{.ID}}">
+              <header class="book-header"><h3><a href="#{{.ID}}">{{.Title}}</a></h3> <span>by {{.Author}}{{if ge .Date "2019-01-01"}} · <time datetime="{{.Date}}">{{shortDate .Date}}</time>{{end}}</span></header>
+              {{.Body}}
+            </article>
+          {{end}}
+        </section>
+      {{end}}
     {{else}}
       <article>
         {{if .Article.Date}}<header class="article-header">{{end}}

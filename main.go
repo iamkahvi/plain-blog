@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -25,9 +26,9 @@ import (
 )
 
 type article struct {
-	Title, Description, Date, URL, Substack string
-	Published                               *bool
-	Body                                    template.HTML
+	Title, Description, Date, URL, Substack, Author string
+	Published                                       *bool
+	Body                                            template.HTML
 }
 
 type yearGroup struct {
@@ -35,10 +36,21 @@ type yearGroup struct {
 	Articles []article
 }
 
+type book struct {
+	article
+	ID string
+}
+
+type bookYear struct {
+	Year  string
+	Books []book
+}
+
 type page struct {
 	Title, Kind string
 	Article     article
 	Years       []yearGroup
+	BookYears   []bookYear
 }
 
 var markdown = goldmark.New(
@@ -87,6 +99,57 @@ func groupByYear(articles []article) []yearGroup {
 		last.Articles = append(last.Articles, a)
 	}
 	return years
+}
+
+var bookWhitespace = regexp.MustCompile(`[\s\p{Z}]+`)
+
+// bookID preserves the anchors used by the original book shelf.
+func bookID(title string) string {
+	clean := strings.NewReplacer("!", "", "'", "", "’", "", ".", "", "(", "", ")", "", "*", "", ":", "").Replace(title)
+	return strings.ToLower(bookWhitespace.ReplaceAllString(clean, "-"))
+}
+
+func readBooks(root string) ([]bookYear, error) {
+	matches, err := filepath.Glob(filepath.Join(root, "content/book-shelf/books/*.md"))
+	if err != nil {
+		return nil, err
+	}
+	var books []book
+	ids := make(map[string]string)
+	for _, file := range matches {
+		a, err := readArticle(file, "", "book")
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(a.Author) == "" {
+			return nil, fmt.Errorf("%s: missing author", file)
+		}
+		id := bookID(a.Title)
+		if id == "" {
+			return nil, fmt.Errorf("%s: empty book anchor", file)
+		}
+		if previous, ok := ids[id]; ok {
+			return nil, fmt.Errorf("%s and %s: duplicate book anchor %q", previous, file, id)
+		}
+		ids[id] = file
+		books = append(books, book{article: a, ID: id})
+	}
+	sort.Slice(books, func(i, j int) bool {
+		if books[i].Date == books[j].Date {
+			return books[i].Title < books[j].Title
+		}
+		return books[i].Date > books[j].Date
+	})
+	var years []bookYear
+	for _, b := range books {
+		year := b.Date[:4]
+		if len(years) == 0 || years[len(years)-1].Year != year {
+			years = append(years, bookYear{Year: year})
+		}
+		last := &years[len(years)-1]
+		last.Books = append(last.Books, b)
+	}
+	return years, nil
 }
 
 // build returns URL paths and their contents. It does not modify the output directory.
@@ -140,6 +203,14 @@ func build(root string) (map[string][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	bookShelf, err := readArticle(filepath.Join(root, "content/book-shelf/book-shelf.md"), "/book-shelf/", "page")
+	if err != nil {
+		return nil, err
+	}
+	bookYears, err := readBooks(root)
+	if err != nil {
+		return nil, err
+	}
 	var articles []article
 	for _, dir := range []string{"posts", "newsletter"} {
 		matches, err := filepath.Glob(filepath.Join(root, "content", dir, "*.md"))
@@ -182,6 +253,7 @@ func build(root string) (map[string][]byte, error) {
 		{"/about/", page{Title: about.Title, Kind: "page", Article: about}},
 		{"/projects/", page{Title: projects.Title, Kind: "page", Article: projects}},
 		{"/pronounce/", page{Title: pronounce.Title, Kind: "page", Article: pronounce}},
+		{"/book-shelf/", page{Title: bookShelf.Title, Kind: "books", Article: bookShelf, BookYears: bookYears}},
 		{"/writing/", page{Title: "writing", Kind: "writing", Years: groupByYear(articles)}},
 	} {
 		if err := render(item.url, item.p); err != nil {

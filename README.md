@@ -28,6 +28,10 @@ Open <http://127.0.0.1:8080/>. Changes to `content/`, `public/`, `layout.html`, 
   - `pronounce/`
     - `pronounce.md` — required
       - `title`
+  - `book-shelf/`
+    - `book-shelf.md` — required; contains the page title and introduction
+    - `books/` — optional
+      - `<filename>.md` — each file needs `title`, `author`, and `date` (`YYYY-MM-DD`)
   - `posts/` — optional
     - `<filename>.md`
       - `title`
@@ -36,6 +40,8 @@ Open <http://127.0.0.1:8080/>. Changes to `content/`, `public/`, `layout.html`, 
     - `<filename>.md`
       - `title`
       - `date` — `YYYY-MM-DD`
+
+Books use `content/book-shelf/books/*.md`. The book shelf lists them by date, newest first. Each book body contains its notes. Books with the same date sort by title. As on the original site, the page does not show dates before 2019.
 
 Posts use `content/posts/*.md`; newsletters use `content/newsletter/*.md`. Each file needs YAML front matter with a title and a `YYYY-MM-DD` date. Set `published: false` to omit an entry. Both use `/writing/<filename>/`, so filenames must be unique across both directories.
 
