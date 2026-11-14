@@ -7,6 +7,7 @@
   --c-text: #222;
   --c-link: #297373;
 }
+html { overflow-y: scroll; }
 body {
   margin: 2.5rem auto;
   max-width: 650px;
