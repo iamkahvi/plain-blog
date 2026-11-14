@@ -76,8 +76,8 @@ func TestBuild(t *testing.T) {
 	if !strings.Contains(string(files["/about/"]), "Hello <strong>world</strong>") || !strings.Contains(string(files["/pronounce/"]), "<audio controls>") {
 		t.Error("Markdown or trusted HTML was not rendered")
 	}
-	if strings.Contains(string(files["/about/"]), "<hr>") || strings.Contains(string(files["/about/"]), `class="article-header"`) {
-		t.Error("undated page has a dated article header or separator")
+	if strings.Contains(string(files["/about/"]), `class="article-header"`) {
+		t.Error("undated page has a dated article header")
 	}
 	projects := string(files["/projects/"])
 	if !strings.Contains(projects, "<h1>projects</h1>") || !strings.Contains(projects, `<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>`) {
@@ -90,8 +90,8 @@ func TestBuild(t *testing.T) {
 		!strings.Contains(post, `<h2 id="ui-design">UI Design</h2>`) {
 		t.Error("content case or heading links were not preserved")
 	}
-	if !strings.Contains(post, "<header class=\"article-header\">\n        <h1>First &amp; best</h1>\n        <time datetime=\"2020-01-01\">january 1, 2020</time>\n        </header>\n        <hr>\n        <p><a href=\"#ui-design\">Section</a></p>") {
-		t.Error("article header or separator is incorrect")
+	if !strings.Contains(post, "<header class=\"article-header\">\n        <h1>First &amp; best</h1>\n        <time datetime=\"2020-01-01\">january 1, 2020</time>\n        </header>\n        <p><a href=\"#ui-design\">Section</a></p>") {
+		t.Error("article header is incorrect")
 	}
 	if !strings.Contains(post, `<a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/projects/">projects</a> · <a href="/about/">about</a> <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>`) ||
 		!strings.Contains(post, `<script src="/color-theme.js"></script>`) {

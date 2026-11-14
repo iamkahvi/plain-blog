@@ -28,8 +28,7 @@
         {{if .Article.Date}}<header class="article-header">{{end}}
         <h1>{{.Article.Title}}</h1>
         {{if .Article.Date}}<time datetime="{{.Article.Date}}">{{date .Article.Date}}</time>
-        </header>
-        <hr>{{end}}
+        </header>{{end}}
         {{.Article.Body}}
       </article>
     {{end}}
