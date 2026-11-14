@@ -27,12 +27,18 @@ func fixture(t *testing.T) string {
 	}
 	put(t, root, "layout.html", string(layout))
 	put(t, root, "style.css", "body {}")
+	themeScript, err := os.ReadFile("public/color-theme.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, root, "public/color-theme.js", string(themeScript))
 	put(t, root, "content/about/about.md", "---\ntitle: about\n---\nHello **world**.\n")
+	put(t, root, "content/projects/projects.md", "---\ntitle: projects\n---\n- https://example.com\n")
 	put(t, root, "content/pronounce/pronounce.md", "---\ntitle: pronounce\n---\n<audio controls></audio>\n")
 	put(t, root, "content/posts/first.md", "---\ntitle: 'First & best'\ndate: 2020-01-01\n---\n[Section](#ui-design)\n\n## UI Design\n")
 	put(t, root, "content/posts/draft.md", "---\ntitle: Draft\ndate: 2024-01-01\npublished: false\n---\nPrivate\n")
 	put(t, root, "content/newsletter/latest.md", "---\ntitle: Latest\ndate: 2026-04-16\n---\nNews\n")
-	put(t, root, "content/newsletter/february.md", "---\ntitle: February 2026\ndate: 2026-03-13\n---\nNews\n")
+	put(t, root, "content/newsletter/february.md", "---\ntitle: February 2026\ndate: 2026-03-13\nsubstack: 'https://example.com/p/february?one=1&two=2'\n---\nNews\n")
 	put(t, root, "public/assets/photo.txt", "photo")
 	return root
 }
@@ -43,7 +49,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, url := range []string{"/", "/about/", "/pronounce/", "/writing/", "/writing/first/", "/writing/latest/", "/style.css", "/assets/photo.txt"} {
+	for _, url := range []string{"/", "/about/", "/projects/", "/pronounce/", "/writing/", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/color-theme.js", "/assets/photo.txt"} {
 		if _, ok := files[url]; !ok {
 			t.Errorf("missing %s", url)
 		}
@@ -58,16 +64,24 @@ func TestBuild(t *testing.T) {
 		t.Errorf("unexpected list: %s", writing)
 	}
 	if strings.Count(writing, "<h2>2026</h2>") != 1 || !strings.Contains(writing, "<h2>2020</h2>") ||
-		!strings.Contains(writing, `<a href="/writing/february/">February 2026</a> - <time datetime="2026-03-13">03.13</time>`) ||
-		strings.Contains(writing, "<small>") {
+		!strings.Contains(writing, `<a href="https://example.com/p/february?one=1&amp;two=2" target="_blank" rel="noopener noreferrer">February 2026</a> - <time datetime="2026-03-13">03.13</time>`) ||
+		!strings.Contains(writing, `<a href="/writing/first/">First &amp; best</a>`) ||
+		!strings.Contains(writing, `<a href="/writing/latest/">Latest</a>`) || strings.Contains(writing, "<small>") {
 		t.Errorf("unexpected year groups or list format: %s", writing)
 	}
 	home := string(files["/"])
-	if !strings.Contains(home, "<h3>2026</h3>") || !strings.Contains(home, `>February 2026</a> - <time datetime="2026-03-13">03.13</time>`) {
-		t.Error("home list does not show grouped dates")
+	if !strings.Contains(home, "<h3>2026</h3>") || !strings.Contains(home, `<a href="https://example.com/p/february?one=1&amp;two=2" target="_blank" rel="noopener noreferrer">February 2026</a>`) {
+		t.Error("home list does not link to Substack")
 	}
 	if !strings.Contains(string(files["/about/"]), "Hello <strong>world</strong>") || !strings.Contains(string(files["/pronounce/"]), "<audio controls>") {
 		t.Error("Markdown or trusted HTML was not rendered")
+	}
+	if strings.Contains(string(files["/about/"]), "<hr>") || strings.Contains(string(files["/about/"]), `class="article-header"`) {
+		t.Error("undated page has a dated article header or separator")
+	}
+	projects := string(files["/projects/"])
+	if !strings.Contains(projects, "<h1>projects</h1>") || !strings.Contains(projects, `<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>`) {
+		t.Error("projects page was not rendered from Markdown")
 	}
 	post := string(files["/writing/first/"])
 	if !strings.Contains(post, "<title>First &amp; best | kahvi patel</title>") ||
@@ -76,8 +90,12 @@ func TestBuild(t *testing.T) {
 		!strings.Contains(post, `<h2 id="ui-design">UI Design</h2>`) {
 		t.Error("content case or heading links were not preserved")
 	}
-	if !strings.Contains(post, `<a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/about/">about</a>`) {
-		t.Error("navigation order is incorrect")
+	if !strings.Contains(post, "<header class=\"article-header\">\n        <h1>First &amp; best</h1>\n        <time datetime=\"2020-01-01\">january 1, 2020</time>\n        </header>\n        <hr>\n        <p><a href=\"#ui-design\">Section</a></p>") {
+		t.Error("article header or separator is incorrect")
+	}
+	if !strings.Contains(post, `<a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/projects/">projects</a> · <a href="/about/">about</a> <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>`) ||
+		!strings.Contains(post, `<script src="/color-theme.js"></script>`) {
+		t.Error("theme control or existing navigation is missing")
 	}
 	newsletter := string(files["/writing/latest/"])
 	if !strings.Contains(newsletter, `<time datetime="2026-04-16">april 16, 2026</time>`) || strings.Contains(newsletter, " · newsletter") {
@@ -85,6 +103,13 @@ func TestBuild(t *testing.T) {
 	}
 	if strings.Contains(string(files["/"]), "__reload") {
 		t.Error("static page contains development script")
+	}
+	themeScript, err := os.ReadFile(filepath.Join(root, "public", "color-theme.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(files["/color-theme.js"]) != string(themeScript) {
+		t.Error("theme script was not copied from public/ unchanged")
 	}
 	put(t, root, "dist/stale.txt", "old")
 	if err := writeSite(root, files); err != nil {

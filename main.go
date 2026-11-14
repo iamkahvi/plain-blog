@@ -25,9 +25,9 @@ import (
 )
 
 type article struct {
-	Title, Description, Date, URL string
-	Published                     *bool
-	Body                          template.HTML
+	Title, Description, Date, URL, Substack string
+	Published                               *bool
+	Body                                    template.HTML
 }
 
 type yearGroup struct {
@@ -122,13 +122,21 @@ func build(root string) (map[string][]byte, error) {
 		if err := layout.Execute(&out, p); err != nil {
 			return err
 		}
-		return add(url, out.Bytes())
+		data, err := externalLinks(out.Bytes())
+		if err != nil {
+			return err
+		}
+		return add(url, data)
 	}
 	about, err := readArticle(filepath.Join(root, "content/about/about.md"), "/about/", "page")
 	if err != nil {
 		return nil, err
 	}
 	pronounce, err := readArticle(filepath.Join(root, "content/pronounce/pronounce.md"), "/pronounce/", "page")
+	if err != nil {
+		return nil, err
+	}
+	projects, err := readArticle(filepath.Join(root, "content/projects/projects.md"), "/projects/", "page")
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +180,7 @@ func build(root string) (map[string][]byte, error) {
 	}{
 		{"/", page{Title: "home", Kind: "home", Article: about, Years: groupByYear(recent)}},
 		{"/about/", page{Title: about.Title, Kind: "page", Article: about}},
+		{"/projects/", page{Title: projects.Title, Kind: "page", Article: projects}},
 		{"/pronounce/", page{Title: pronounce.Title, Kind: "page", Article: pronounce}},
 		{"/writing/", page{Title: "writing", Kind: "writing", Years: groupByYear(articles)}},
 	} {

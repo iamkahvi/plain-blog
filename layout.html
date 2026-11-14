@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{if ne .Kind "home"}}{{.Title}} | {{end}}kahvi patel</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="/color-theme.js"></script>
 </head>
 <body>
   <header>
     <nav aria-label="main navigation">
-      <a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/about/">about</a>
+      <a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/projects/">projects</a> · <a href="/about/">about</a> <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>
     </nav>
   </header>
   <main>
@@ -24,8 +25,11 @@
       {{template "list" .}}
     {{else}}
       <article>
+        {{if .Article.Date}}<header class="article-header">{{end}}
         <h1>{{.Article.Title}}</h1>
-        {{if .Article.Date}}<p><time datetime="{{.Article.Date}}">{{date .Article.Date}}</time></p>{{end}}
+        {{if .Article.Date}}<time datetime="{{.Article.Date}}">{{date .Article.Date}}</time>
+        </header>
+        <hr>{{end}}
         {{.Article.Body}}
       </article>
     {{end}}
@@ -37,7 +41,7 @@
   {{if eq $.Kind "home"}}<h3>{{.Year}}</h3>{{else}}<h2>{{.Year}}</h2>{{end}}
   <ul class="articles">
     {{range .Articles}}
-      <li><a href="{{.URL}}">{{.Title}}</a> - <time datetime="{{.Date}}">{{shortDate .Date}}</time></li>
+      <li><a href="{{if .Substack}}{{.Substack}}{{else}}{{.URL}}{{end}}"{{if .Substack}} target="_blank" rel="noopener noreferrer"{{end}}>{{.Title}}</a> - <time datetime="{{.Date}}">{{shortDate .Date}}</time></li>
     {{end}}
   </ul>
 {{end}}
