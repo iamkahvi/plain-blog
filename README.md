@@ -8,6 +8,14 @@ go run . build
 
 The build replaces `dist/`. Deploy its contents to a static host that serves directory index files.
 
+Cloudflare Workers builds and deploys the site after each push to `main`. To deploy manually, install Node.js 24 and run:
+
+```sh
+npm ci
+go run . build
+npx cf deploy
+```
+
 Start the local server:
 
 ```sh
