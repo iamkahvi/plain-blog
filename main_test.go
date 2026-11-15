@@ -128,6 +128,32 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestExternalContentDirectory(t *testing.T) {
+	root := fixture(t)
+	content := filepath.Join(t.TempDir(), "vault")
+	if err := os.Rename(filepath.Join(root, "content"), content); err != nil {
+		t.Fatal(err)
+	}
+	put(t, root, "content/about/about.md", "not the vault")
+	t.Setenv("BLOG_CONTENT_DIR", content)
+	files, err := build(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(files["/about/"]), "Hello <strong>world</strong>") {
+		t.Fatal("build did not use external content")
+	}
+	before, err := fingerprint(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, content, "posts/new.md", "new")
+	after, err := fingerprint(root)
+	if err != nil || before == after {
+		t.Fatalf("external content change was not detected: %v", err)
+	}
+}
+
 func TestBookID(t *testing.T) {
 	for title, want := range map[string]string{
 		"The Autobiography of Malcolm X ": "the-autobiography-of-malcolm-x-",

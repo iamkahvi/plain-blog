@@ -101,6 +101,14 @@ func groupByYear(articles []article) []yearGroup {
 	return years
 }
 
+// contentDir lets a build use content outside the source checkout.
+func contentDir(root string) string {
+	if dir := os.Getenv("BLOG_CONTENT_DIR"); dir != "" {
+		return dir
+	}
+	return filepath.Join(root, "content")
+}
+
 var bookWhitespace = regexp.MustCompile(`[\s\p{Z}]+`)
 
 // bookID preserves the anchors used by the original book shelf.
@@ -109,8 +117,8 @@ func bookID(title string) string {
 	return strings.ToLower(bookWhitespace.ReplaceAllString(clean, "-"))
 }
 
-func readBooks(root string) ([]bookYear, error) {
-	matches, err := filepath.Glob(filepath.Join(root, "content/book-shelf/books/*.md"))
+func readBooks(content string) ([]bookYear, error) {
+	matches, err := filepath.Glob(filepath.Join(content, "book-shelf/books/*.md"))
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +162,10 @@ func readBooks(root string) ([]bookYear, error) {
 
 // build returns URL paths and their contents. It does not modify the output directory.
 func build(root string) (map[string][]byte, error) {
+	return buildWithContent(root, contentDir(root))
+}
+
+func buildWithContent(root, content string) (map[string][]byte, error) {
 	layout, err := template.New("layout.html").Funcs(template.FuncMap{
 		"shortDate": func(value string) string { return value[5:7] + "." + value[8:10] },
 		"date": func(value string) (string, error) {
@@ -191,29 +203,29 @@ func build(root string) (map[string][]byte, error) {
 		}
 		return add(url, data)
 	}
-	about, err := readArticle(filepath.Join(root, "content/about/about.md"), "/about/", "page")
+	about, err := readArticle(filepath.Join(content, "about/about.md"), "/about/", "page")
 	if err != nil {
 		return nil, err
 	}
-	pronounce, err := readArticle(filepath.Join(root, "content/pronounce/pronounce.md"), "/pronounce/", "page")
+	pronounce, err := readArticle(filepath.Join(content, "pronounce/pronounce.md"), "/pronounce/", "page")
 	if err != nil {
 		return nil, err
 	}
-	projects, err := readArticle(filepath.Join(root, "content/projects/projects.md"), "/projects/", "page")
+	projects, err := readArticle(filepath.Join(content, "projects/projects.md"), "/projects/", "page")
 	if err != nil {
 		return nil, err
 	}
-	bookShelf, err := readArticle(filepath.Join(root, "content/book-shelf/book-shelf.md"), "/book-shelf/", "page")
+	bookShelf, err := readArticle(filepath.Join(content, "book-shelf/book-shelf.md"), "/book-shelf/", "page")
 	if err != nil {
 		return nil, err
 	}
-	bookYears, err := readBooks(root)
+	bookYears, err := readBooks(content)
 	if err != nil {
 		return nil, err
 	}
 	var articles []article
 	for _, dir := range []string{"posts", "newsletter"} {
-		matches, err := filepath.Glob(filepath.Join(root, "content", dir, "*.md"))
+		matches, err := filepath.Glob(filepath.Join(content, dir, "*.md"))
 		if err != nil {
 			return nil, err
 		}
@@ -323,9 +335,8 @@ func writeSite(root string, files map[string][]byte) error {
 // fingerprint detects file additions, edits, and deletions without a platform-specific watcher.
 func fingerprint(root string) (string, error) {
 	h := sha256.New()
-	for _, name := range []string{"content", "public", "layout.html", "style.css"} {
-		file := filepath.Join(root, name)
-		if _, err := os.Stat(file); os.IsNotExist(err) && name == "public" {
+	for _, file := range []string{contentDir(root), filepath.Join(root, "public"), filepath.Join(root, "layout.html"), filepath.Join(root, "style.css")} {
+		if _, err := os.Stat(file); os.IsNotExist(err) && file == filepath.Join(root, "public") {
 			continue
 		} else if err != nil {
 			return "", err
@@ -426,11 +437,17 @@ func serve(root, addr string) error {
 }
 
 func main() {
-	if len(os.Args) != 2 || (os.Args[1] != "build" && os.Args[1] != "dev") {
-		log.Fatal("usage: go run . [build|dev]")
+	if len(os.Args) != 2 || (os.Args[1] != "build" && os.Args[1] != "build-artifacts" && os.Args[1] != "dev") {
+		log.Fatal("usage: go run . [build|build-artifacts|dev]")
 	}
 	if os.Args[1] == "dev" {
 		log.Fatal(serve(".", "127.0.0.1:8080"))
+	}
+	if os.Args[1] == "build-artifacts" {
+		if err := buildFromArtifacts("."); err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
 	files, err := build(".")
 	if err == nil {
