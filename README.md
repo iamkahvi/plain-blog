@@ -26,7 +26,7 @@ Open <http://127.0.0.1:8080/>. Changes to the content directory, `public/`, `lay
 
 ## Obsidian content
 
-The vault folder is the content source. The Cloudflare Artifacts Sync plugin copies it to an Artifacts repository. Workers Builds fetches that repository when a push to GitHub `main` starts a build. Sync the plugin before the push to include the latest edits. A content sync alone does not start a build.
+The vault folder is the content source. The Cloudflare Artifacts Sync plugin copies it to an Artifacts repository. Workers Builds fetches that repository when a push to GitHub `main` starts a build. You can also start a build from Obsidian without a GitHub push. A content sync alone does not start a build.
 
 1. Configure the plugin to sync the content folder to an Artifacts repository. Use the `main` branch. Artifacts requires a Workers Paid plan.
 2. Use `cf builds workers update` to set the build command to `go run . build-artifacts`. Keep the existing deploy command.
@@ -35,6 +35,16 @@ The vault folder is the content source. The Cloudflare Artifacts Sync plugin cop
 5. Sync the plugin, then push to GitHub `main`. Check the Worker build log for the Artifacts content revision.
 
 Build variables and secrets are separate from Worker runtime variables. The build fails if it cannot fetch Artifacts. It does not fall back to the copy in the GitHub checkout. Keep the repository token in production build secrets, not in the repository or preview builds. Replace the secret when you renew the token.
+
+### Start a build from Obsidian
+
+1. Run the Artifacts Sync **Sync now** command. Wait for it to finish.
+2. Run **Plain Blog Build: Start blog build** in the command palette.
+3. Check the Worker build history for the result.
+
+A build request does not confirm deployment. The build uses the latest synced content and the latest GitHub `main` revision. Unsynced vault edits and uncommitted code changes are not included.
+
+To set up the command, copy `obsidian-blog-build/manifest.json` and `obsidian-blog-build/main.js` to `.obsidian/plugins/plain-blog-build/` in the vault. Enable the plugin in Obsidian. Create a Workers Builds Deploy Hook for `plain-blog` on `main`, then add its URL in the plugin settings. The URL is a credential. The plugin stores it in the Obsidian keychain, not in plugin data. Configure the keychain on each device that does not have the secret. Do not commit or share the URL. Delete and replace the hook if its URL is exposed.
 
 The plugin stores Git metadata in the selected folder. If Syncthing also syncs that folder, exclude the plugin's `.git` directory from Syncthing.
 

@@ -1,0 +1,9 @@
+{
+  "id": "plain-blog-build",
+  "name": "Plain Blog Build",
+  "version": "1.0.0",
+  "minAppVersion": "1.11.5",
+  "description": "Start a Cloudflare Workers build for the blog.",
+  "author": "Kahvi Patel",
+  "isDesktopOnly": false
+}
