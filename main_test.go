@@ -27,11 +27,6 @@ func fixture(t *testing.T) string {
 	}
 	put(t, root, "layout.html", string(layout))
 	put(t, root, "style.css", "body {}")
-	themeScript, err := os.ReadFile("public/color-theme.js")
-	if err != nil {
-		t.Fatal(err)
-	}
-	put(t, root, "public/color-theme.js", string(themeScript))
 	put(t, root, "content/home/home.md", "---\ntitle: Test Blog\npermalink: /\n---\nHello **world**.\n")
 	put(t, root, "content/writing/writing.md", "---\ntitle: writing\npermalink: /writing/\n---\nWriting introduction.\n")
 	put(t, root, "content/projects/projects.md", "---\ntitle: projects\npermalink: /projects/\n---\n- https://example.com\n")
@@ -57,7 +52,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/color-theme.js", "/assets/photo.txt"} {
+	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/assets/photo.txt"} {
 		if _, ok := files[url]; !ok {
 			t.Errorf("missing %s", url)
 		}
@@ -110,9 +105,11 @@ func TestBuild(t *testing.T) {
 	if !strings.Contains(post, "<header class=\"article-header\">\n        <h1>First &amp; best</h1>\n        <time datetime=\"2020-01-01\">january 1, 2020</time>\n        </header>\n        <p><a href=\"#ui-design\">Section</a></p>") {
 		t.Error("article header is incorrect")
 	}
-	if !strings.Contains(post, `<a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/book-shelf/">book shelf</a> · <a href="/projects/">projects</a> <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>`) ||
-		!strings.Contains(post, `<script src="/color-theme.js"></script>`) {
-		t.Error("theme control or existing navigation is missing")
+	if !strings.Contains(post, `<a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/book-shelf/">book shelf</a> · <a href="/projects/">projects</a>`) {
+		t.Error("existing navigation is missing")
+	}
+	if strings.Contains(post, "color-theme") || strings.Contains(post, "change theme") {
+		t.Error("theme control or script is still present")
 	}
 	newsletter := string(files["/writing/latest/"])
 	if !strings.Contains(newsletter, `<time datetime="2026-04-16">april 16, 2026</time>`) || strings.Contains(newsletter, " · newsletter") {
@@ -120,13 +117,6 @@ func TestBuild(t *testing.T) {
 	}
 	if strings.Contains(string(files["/"]), "__reload") {
 		t.Error("static page contains development script")
-	}
-	themeScript, err := os.ReadFile(filepath.Join(root, "public", "color-theme.js"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(files["/color-theme.js"]) != string(themeScript) {
-		t.Error("theme script was not copied from public/ unchanged")
 	}
 	put(t, root, "dist/stale.txt", "old")
 	if err := writeSite(root, files); err != nil {

@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{if ne .Kind "home"}}{{.Title}} | {{end}}{{.SiteTitle}}</title>
   <link rel="stylesheet" href="/style.css">
-  <script src="/color-theme.js"></script>
 </head>
 <body>
   <header>
     <nav aria-label="main navigation">
-      {{range $i, $link := .Nav}}{{if $i}} · {{end}}<a href="{{$link.URL}}">{{$link.Title}}</a>{{end}} <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>
+      {{range $i, $link := .Nav}}{{if $i}} · {{end}}<a href="{{$link.URL}}">{{$link.Title}}</a>{{end}}
     </nav>
   </header>
   <main>

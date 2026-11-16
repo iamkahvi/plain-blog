@@ -1,11 +1,22 @@
 :root {
-  --c-main: #ff8552;
-  --c-second: #297373;
-  --c-third: #eee;
+  --c-main: #FFA9A3;
+  --c-second: #7D938A;
+  --c-third: #c9dfe650;
   --c-background: white;
-  --c-main-selection: #ff855250;
+  --c-main-selection: #FFA9A350;
   --c-text: #222;
-  --c-link: #297373;
+  --c-link: #687a73;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-main: #D5ACA9;
+    --c-second: #9AC2C5;
+    --c-third: #D5ACA950;
+    --c-background: #424B54;
+    --c-main-selection: #D5ACA950;
+    --c-text: #fff;
+    --c-link: #9AC2C5;
+  }
 }
 html { overflow-y: scroll; }
 body {

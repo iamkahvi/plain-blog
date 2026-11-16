@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Theme preview</title>
+  <style>
+    body { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; font: 16px/1.5 system-ui, sans-serif; color: #222; }
+    .themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: 1.5rem; }
+    .theme { border: 1px solid #ccc; border-radius: .5rem; overflow: hidden; }
+    .sample { padding: 1.25rem; color: var(--text); background: var(--background); }
+    .sample h2 { margin: 0 0 .5rem; }
+    .sample p { margin: .5rem 0; }
+    .sample a { color: var(--link); }
+    .swatches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; padding: 1rem; background: white; }
+    .swatch { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; min-width: 0; font-size: .8rem; }
+    .color { flex: none; width: 2rem; height: 2rem; border: 1px solid #aaa; border-radius: .25rem; }
+    .swatch code { display: block; }
+  </style>
+</head>
+<body>
+  <h1>Theme preview</h1>
+  <p>Each name is the saved theme ID. Numbers are for reference only.</p>
+  <main class="themes" id="themes"></main>
+  <script>
+    // Background, text, and link values for each theme.
+    const themes = {
+      classic: ["white", "#222", "#297373"],
+      bubblegum: ["white", "#222", "#4875c9"],
+      pastel: ["white", "#222", "#687a73"],
+      artic: ["white", "#222", "#6C698D"],
+      forest: ["white", "#222", "#627264"],
+      purple: ["white", "#222", "#906d7c"],
+      blue: ["#326273", "#fff", "#93E0FF"],
+      dark: ["#424B54", "#fff", "#9AC2C5"],
+    };
+    const labels = ["Background", "Text", "Link"];
+    const container = document.getElementById("themes");
+
+    Object.entries(themes).forEach(([name, colors], index) => {
+      const [background, text, link] = colors;
+      const card = document.createElement("section");
+      card.className = "theme";
+      card.id = name;
+      card.innerHTML = `
+        <div class="sample" style="--background:${background}; --link:${link}; --text:${text}">
+          <h2>${String(index + 1).padStart(2, "0")} · ${name}</h2>
+          <p>Sample text and a <a href="#${name}">sample link</a>.</p>
+        </div>
+        <div class="swatches">${colors.map((color, i) => `
+          <div class="swatch"><span class="color" style="background:${color}"></span><span>${labels[i]}<code>${color}</code></span></div>
+        `).join("")}</div>`;
+      container.append(card);
+    });
+  </script>
+</body>
+</html>
