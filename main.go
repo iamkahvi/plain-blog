@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -436,11 +437,23 @@ func serve(root, addr string) error {
 	return http.ListenAndServe(addr, mux)
 }
 
+// loadDevEnv loads optional local settings without overriding the shell environment.
+func loadDevEnv(root string) error {
+	err := godotenv.Load(filepath.Join(root, ".env.local"))
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return err
+}
+
 func main() {
 	if len(os.Args) != 2 || (os.Args[1] != "build" && os.Args[1] != "build-artifacts" && os.Args[1] != "dev") {
 		log.Fatal("usage: go run . [build|build-artifacts|dev]")
 	}
 	if os.Args[1] == "dev" {
+		if err := loadDevEnv("."); err != nil {
+			log.Fatal(err)
+		}
 		log.Fatal(serve(".", "127.0.0.1:8080"))
 	}
 	if os.Args[1] == "build-artifacts" {

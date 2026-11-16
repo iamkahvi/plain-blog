@@ -128,6 +128,35 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestLoadDevEnv(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("BLOG_CONTENT_DIR", "")
+	if err := os.Unsetenv("BLOG_CONTENT_DIR"); err != nil {
+		t.Fatal(err)
+	}
+	if err := loadDevEnv(root); err != nil {
+		t.Fatalf("missing file: %v", err)
+	}
+	put(t, root, ".env.local", "BLOG_CONTENT_DIR=/vault/content\n")
+	if err := loadDevEnv(root); err != nil {
+		t.Fatal(err)
+	}
+	if got := os.Getenv("BLOG_CONTENT_DIR"); got != "/vault/content" {
+		t.Fatalf("content directory = %q", got)
+	}
+	t.Setenv("BLOG_CONTENT_DIR", "/shell/content")
+	if err := loadDevEnv(root); err != nil {
+		t.Fatal(err)
+	}
+	if got := os.Getenv("BLOG_CONTENT_DIR"); got != "/shell/content" {
+		t.Fatalf("shell value was overwritten: %q", got)
+	}
+	put(t, root, ".env.local", "not a valid assignment\n")
+	if err := loadDevEnv(root); err == nil {
+		t.Fatal("invalid env file was accepted")
+	}
+}
+
 func TestExternalContentDirectory(t *testing.T) {
 	root := fixture(t)
 	content := filepath.Join(t.TempDir(), "vault")

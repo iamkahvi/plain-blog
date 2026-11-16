@@ -55,6 +55,14 @@ BLOG_CONTENT_DIR=/path/to/content go run . build
 BLOG_CONTENT_DIR=/path/to/content go run . dev
 ```
 
+For the local server, you can also set `BLOG_CONTENT_DIR` in `.env.local`:
+
+```sh
+BLOG_CONTENT_DIR=/path/to/content
+```
+
+The file is not tracked by Git. Shell environment variables take precedence. The `build` command does not read `.env.local`.
+
 Without `BLOG_CONTENT_DIR`, local commands use the repository's `content/` directory. `scripts/sync-blog-content.sh` copies repository content to `BLOG_CONTENT_DIR`. Do not run it after the vault becomes the source of truth.
 
 ## Content structure
