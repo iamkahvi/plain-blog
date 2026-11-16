@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{if ne .Kind "home"}}{{.Title}} | {{end}}{{.SiteTitle}}</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="/theme-mode.js"></script>
 </head>
 <body>
   <header>
@@ -19,6 +20,7 @@
       <h2>recent writing</h2>
       {{template "list" .}}
       <p><a href="{{.WritingURL}}">all writing →</a></p>
+      <p><button id="theme-toggle" type="button" hidden>switch theme</button></p>
     {{else if eq .Kind "writing"}}
       <h1>{{.Article.Title}}</h1>
       {{.Article.Body}}
@@ -50,12 +52,15 @@
 </body>
 </html>
 {{define "list"}}
+{{if .Years}}
+{{if eq .Kind "home"}}<ul class="articles">{{end}}
 {{range .Years}}
-  {{if eq $.Kind "home"}}<h3>{{.Year}}</h3>{{else}}<h2>{{.Year}}</h2>{{end}}
-  <ul class="articles">
+  {{if ne $.Kind "home"}}<h2>{{.Year}}</h2><ul class="articles">{{end}}
     {{range .Articles}}
       <li><a href="{{if .Substack}}{{.Substack}}{{else}}{{.URL}}{{end}}"{{if .Substack}} target="_blank" rel="noopener noreferrer"{{end}}>{{.Title}}</a> - <time datetime="{{.Date}}">{{shortDate .Date}}</time></li>
     {{end}}
-  </ul>
+  {{if ne $.Kind "home"}}</ul>{{end}}
+{{end}}
+{{if eq .Kind "home"}}</ul>{{end}}
 {{end}}
 {{end}}

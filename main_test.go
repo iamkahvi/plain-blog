@@ -27,6 +27,11 @@ func fixture(t *testing.T) string {
 	}
 	put(t, root, "layout.html", string(layout))
 	put(t, root, "style.css", "body {}")
+	themeScript, err := os.ReadFile("public/theme-mode.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, root, "public/theme-mode.js", string(themeScript))
 	put(t, root, "content/home/home.md", "---\ntitle: Test Blog\npermalink: /\n---\nHello **world**.\n")
 	put(t, root, "content/writing/writing.md", "---\ntitle: writing\npermalink: /writing/\n---\nWriting introduction.\n")
 	put(t, root, "content/projects/projects.md", "---\ntitle: projects\npermalink: /projects/\n---\n- https://example.com\n")
@@ -52,7 +57,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/assets/photo.txt"} {
+	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/theme-mode.js", "/assets/photo.txt"} {
 		if _, ok := files[url]; !ok {
 			t.Errorf("missing %s", url)
 		}
@@ -74,8 +79,11 @@ func TestBuild(t *testing.T) {
 		t.Errorf("unexpected year groups or list format: %s", writing)
 	}
 	home := string(files["/"])
-	if !strings.Contains(home, "<title>Test Blog</title>") || !strings.Contains(home, "<h1>Test Blog</h1>") || !strings.Contains(home, "<h3>2026</h3>") || !strings.Contains(home, externalLink) {
+	if !strings.Contains(home, "<title>Test Blog</title>") || !strings.Contains(home, "<h1>Test Blog</h1>") || !strings.Contains(home, externalLink) {
 		t.Error("home list does not link to Substack with the external link icon")
+	}
+	if strings.Contains(home, "<h3>2026</h3>") || strings.Contains(home, "<h3>2020</h3>") || strings.Contains(home, "<h2>2026</h2>") || strings.Contains(home, "<h2>2020</h2>") || strings.Count(home, `<ul class="articles">`) != 1 || !strings.Contains(home, "First &amp; best") {
+		t.Error("home should show recent entries in one list without year headings")
 	}
 	for _, page := range []string{home, writing} {
 		if strings.Count(page, `class="external-link-icon"`) != 1 {
@@ -108,8 +116,14 @@ func TestBuild(t *testing.T) {
 	if !strings.Contains(post, `<a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/book-shelf/">book shelf</a> · <a href="/projects/">projects</a>`) {
 		t.Error("existing navigation is missing")
 	}
-	if strings.Contains(post, "color-theme") || strings.Contains(post, "change theme") {
-		t.Error("theme control or script is still present")
+	if !strings.Contains(home, `<p><button id="theme-toggle" type="button" hidden>switch theme</button></p>`) ||
+		strings.Contains(post, `id="theme-toggle"`) {
+		t.Error("theme button should appear only on the home page")
+	}
+	for _, page := range []string{home, writing, post} {
+		if !strings.Contains(page, `<script src="/theme-mode.js"></script>`) {
+			t.Error("theme script is missing")
+		}
 	}
 	newsletter := string(files["/writing/latest/"])
 	if !strings.Contains(newsletter, `<time datetime="2026-04-16">april 16, 2026</time>`) || strings.Contains(newsletter, " · newsletter") {
