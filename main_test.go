@@ -32,18 +32,21 @@ func fixture(t *testing.T) string {
 		t.Fatal(err)
 	}
 	put(t, root, "public/color-theme.js", string(themeScript))
-	put(t, root, "content/about/about.md", "---\ntitle: about\n---\nHello **world**.\n")
-	put(t, root, "content/projects/projects.md", "---\ntitle: projects\n---\n- https://example.com\n")
-	put(t, root, "content/pronounce/pronounce.md", "---\ntitle: pronounce\n---\n<audio controls></audio>\n")
-	put(t, root, "content/book-shelf/book-shelf.md", "---\ntitle: book shelf\n---\nBooks I have read.\n")
+	put(t, root, "content/home/home.md", "---\ntitle: Test Blog\npermalink: /\n---\nHello **world**.\n")
+	put(t, root, "content/writing/writing.md", "---\ntitle: writing\npermalink: /writing/\n---\nWriting introduction.\n")
+	put(t, root, "content/projects/projects.md", "---\ntitle: projects\npermalink: /projects/\n---\n- https://example.com\n")
+	put(t, root, "content/pronounce/pronounce.md", "---\ntitle: pronounce\npermalink: /pronounce/\n---\n<audio controls></audio>\n")
+	put(t, root, "content/book-shelf/book-shelf.md", "---\ntitle: book shelf\npermalink: /book-shelf/\n---\nBooks I have read.\n")
+	put(t, root, "content/extra/extra.md", "---\ntitle: Extra\npermalink: /new-path/\n---\nExtra page.\n")
+	put(t, root, "content/resume.md", "---\nrender: raw\n---\n# Resume\n")
 	put(t, root, "content/book-shelf/books/older.md", "---\ntitle: Older Book\nauthor: First Author\ndate: 2020-01-01\n---\nOlder notes.\n")
 	put(t, root, "content/book-shelf/books/newer.md", "---\ntitle: \"A Newer's Book\"\nauthor: Second Author\ndate: 2026-04-25\n---\n**Newer notes.**\n")
 	put(t, root, "content/book-shelf/books/middle.md", "---\ntitle: Middle Book\nauthor: Third Author\ndate: 2026-02-02\n---\nMiddle notes.\n")
 	put(t, root, "content/book-shelf/books/oldest.md", "---\ntitle: Oldest Book\nauthor: Fourth Author\ndate: 2018-12-31\n---\nOldest notes.\n")
-	put(t, root, "content/posts/first.md", "---\ntitle: 'First & best'\ndate: 2020-01-01\n---\n[Section](#ui-design)\n\n## UI Design\n")
-	put(t, root, "content/posts/draft.md", "---\ntitle: Draft\ndate: 2024-01-01\npublished: false\n---\nPrivate\n")
-	put(t, root, "content/newsletter/latest.md", "---\ntitle: Latest\ndate: 2026-04-16\n---\nNews\n")
-	put(t, root, "content/newsletter/february.md", "---\ntitle: February 2026\ndate: 2026-03-13\nsubstack: 'https://example.com/p/february?one=1&two=2'\n---\nNews\n")
+	put(t, root, "content/writing/posts/first.md", "---\ntitle: 'First & best'\ndate: 2020-01-01\n---\n[Section](#ui-design)\n\n## UI Design\n")
+	put(t, root, "content/writing/posts/draft.md", "---\ntitle: Draft\ndate: 2024-01-01\npublished: false\n---\nPrivate\n")
+	put(t, root, "content/writing/newsletter/latest.md", "---\ntitle: Latest\ndate: 2026-04-16\n---\nNews\n")
+	put(t, root, "content/writing/newsletter/february.md", "---\ntitle: February 2026\ndate: 2026-03-13\nsubstack: 'https://example.com/p/february?one=1&two=2'\n---\nNews\n")
 	put(t, root, "public/assets/photo.txt", "photo")
 	return root
 }
@@ -54,12 +57,12 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, url := range []string{"/", "/about/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/color-theme.js", "/assets/photo.txt"} {
+	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/color-theme.js", "/assets/photo.txt"} {
 		if _, ok := files[url]; !ok {
 			t.Errorf("missing %s", url)
 		}
 	}
-	for _, url := range []string{"/writing/draft/", "/first/", "/newsletter/latest/"} {
+	for _, url := range []string{"/about/", "/extra/", "/writing/draft/", "/first/", "/newsletter/latest/"} {
 		if _, ok := files[url]; ok {
 			t.Errorf("unexpected output at %s", url)
 		}
@@ -76,7 +79,7 @@ func TestBuild(t *testing.T) {
 		t.Errorf("unexpected year groups or list format: %s", writing)
 	}
 	home := string(files["/"])
-	if !strings.Contains(home, "<h3>2026</h3>") || !strings.Contains(home, externalLink) {
+	if !strings.Contains(home, "<title>Test Blog</title>") || !strings.Contains(home, "<h1>Test Blog</h1>") || !strings.Contains(home, "<h3>2026</h3>") || !strings.Contains(home, externalLink) {
 		t.Error("home list does not link to Substack with the external link icon")
 	}
 	for _, page := range []string{home, writing} {
@@ -84,10 +87,13 @@ func TestBuild(t *testing.T) {
 			t.Error("list should show the icon for the Substack link")
 		}
 	}
-	if !strings.Contains(string(files["/about/"]), "Hello <strong>world</strong>") || !strings.Contains(string(files["/pronounce/"]), "<audio controls>") {
-		t.Error("Markdown or trusted HTML was not rendered")
+	if !strings.Contains(home, "Hello <strong>world</strong>") || !strings.Contains(writing, "Writing introduction.") || !strings.Contains(string(files["/pronounce/"]), "<audio controls>") || !strings.Contains(string(files["/new-path/"]), "Extra page.") {
+		t.Error("Markdown, generic page, or trusted HTML was not rendered")
 	}
-	if strings.Contains(string(files["/about/"]), `class="article-header"`) {
+	if string(files["/resume.md"]) != "# Resume\n" {
+		t.Errorf("raw file includes front matter or changed body: %q", files["/resume.md"])
+	}
+	if strings.Contains(string(files["/new-path/"]), `class="article-header"`) {
 		t.Error("undated page has a dated article header")
 	}
 	projects := string(files["/projects/"])
@@ -95,7 +101,7 @@ func TestBuild(t *testing.T) {
 		t.Error("projects page was not rendered from Markdown")
 	}
 	post := string(files["/writing/first/"])
-	if !strings.Contains(post, "<title>First &amp; best | kahvi patel</title>") ||
+	if !strings.Contains(post, "<title>First &amp; best | Test Blog</title>") ||
 		!strings.Contains(post, "<h1>First &amp; best</h1>") ||
 		!strings.Contains(post, `<a href="#ui-design">Section</a>`) ||
 		!strings.Contains(post, `<h2 id="ui-design">UI Design</h2>`) {
@@ -169,20 +175,20 @@ func TestExternalContentDirectory(t *testing.T) {
 	if err := os.Rename(filepath.Join(root, "content"), content); err != nil {
 		t.Fatal(err)
 	}
-	put(t, root, "content/about/about.md", "not the vault")
+	put(t, root, "content/home/home.md", "not the vault")
 	t.Setenv("BLOG_CONTENT_DIR", content)
 	files, err := build(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(files["/about/"]), "Hello <strong>world</strong>") {
+	if !strings.Contains(string(files["/"]), "Hello <strong>world</strong>") {
 		t.Fatal("build did not use external content")
 	}
 	before, err := fingerprint(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	put(t, content, "posts/new.md", "new")
+	put(t, content, "writing/posts/new.md", "new")
 	after, err := fingerprint(root)
 	if err != nil || before == after {
 		t.Fatalf("external content change was not detected: %v", err)
@@ -286,21 +292,75 @@ A footnote.[^1]
 
 func TestBuildRejectsInvalidContentAndConflicts(t *testing.T) {
 	root := fixture(t)
-	put(t, root, "content/posts/first.md", "---\ntitle: First\ndate: invalid\n---\nBody")
+	put(t, root, "content/writing/posts/first.md", "---\ntitle: First\ndate: invalid\n---\nBody")
 	if _, err := build(root); err == nil {
 		t.Fatal("invalid date accepted")
 	}
-	put(t, root, "content/posts/first.md", "---\ntitle: First\ndate: 2020-01-01\n---\nBody")
-	put(t, root, "content/newsletter/first.md", "---\ntitle: First\ndate: 2020-01-01\n---\nBody")
+	put(t, root, "content/writing/posts/first.md", "---\ntitle: First\ndate: 2020-01-01\n---\nBody")
+	put(t, root, "content/writing/newsletter/first.md", "---\ntitle: First\ndate: 2020-01-01\n---\nBody")
 	if _, err := build(root); err == nil || !strings.Contains(err.Error(), "output conflict") {
 		t.Fatalf("duplicate post and newsletter slug not detected: %v", err)
 	}
-	if err := os.Remove(filepath.Join(root, "content/newsletter/first.md")); err != nil {
+	if err := os.Remove(filepath.Join(root, "content/writing/newsletter/first.md")); err != nil {
 		t.Fatal(err)
 	}
 	put(t, root, "public/writing/index.html", "conflict")
 	if _, err := build(root); err == nil || !strings.Contains(err.Error(), "output conflict") {
 		t.Fatalf("output conflict not detected: %v", err)
+	}
+}
+
+func TestPagePermalinksAndNavigation(t *testing.T) {
+	root := fixture(t)
+	put(t, root, "content/writing/writing.md", "---\ntitle: Essays\npermalink: /essays/\n---\nIntroduction.\n")
+	files, err := build(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, url := range []string{"/essays/", "/essays/first/"} {
+		if _, ok := files[url]; !ok {
+			t.Errorf("missing %s", url)
+		}
+	}
+	for _, want := range []string{`<a href="/essays/">Essays</a>`, `<a href="/essays/">all writing →</a>`, `<a href="/essays/first/">`} {
+		if !strings.Contains(string(files["/"]), want) {
+			t.Errorf("home lacks %q", want)
+		}
+	}
+	if !strings.Contains(string(files["/essays/"]), "<title>Essays | Test Blog</title>") || !strings.Contains(string(files["/essays/"]), "<h1>Essays</h1>") {
+		t.Error("writing title does not come from content")
+	}
+}
+
+func TestInvalidPageMetadata(t *testing.T) {
+	for _, permalink := range []string{"", "relative/", "/no-slash", "/../escape/", "/a/../b/", "/%2e%2e/", "/query/?q=x", "/__reload/", "/writing/"} {
+		t.Run(permalink, func(t *testing.T) {
+			root := fixture(t)
+			put(t, root, "content/extra/extra.md", "---\ntitle: Extra\npermalink: "+permalink+"\n---\nBody\n")
+			if _, err := build(root); err == nil {
+				t.Fatalf("accepted permalink %q", permalink)
+			}
+		})
+	}
+}
+
+func TestRawContent(t *testing.T) {
+	root := fixture(t)
+	put(t, root, "content/resume.md", "---\r\nrender: raw\r\n---\r\n\r\n# Resume\r\n")
+	put(t, root, "content/private.md", "---\nrender: none\n---\nPrivate\n")
+	files, err := build(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(files["/resume.md"]) != "\r\n# Resume\r\n" {
+		t.Errorf("raw body changed: %q", files["/resume.md"])
+	}
+	if _, ok := files["/private.md"]; ok {
+		t.Error("unmarked root content was published")
+	}
+	put(t, root, "public/resume.md", "duplicate")
+	if _, err := build(root); err == nil || !strings.Contains(err.Error(), "output conflict") {
+		t.Fatalf("duplicate raw output accepted: %v", err)
 	}
 }
 
@@ -310,12 +370,12 @@ func TestFingerprint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	put(t, root, "content/posts/new.md", "new")
+	put(t, root, "content/writing/posts/new.md", "new")
 	after, err := fingerprint(root)
 	if err != nil || before == after {
 		t.Fatalf("addition was not detected: %v", err)
 	}
-	if err := os.Remove(filepath.Join(root, "content/posts/new.md")); err != nil {
+	if err := os.Remove(filepath.Join(root, "content/writing/posts/new.md")); err != nil {
 		t.Fatal(err)
 	}
 	last, err := fingerprint(root)

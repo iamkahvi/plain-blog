@@ -3,25 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{if ne .Kind "home"}}{{.Title}} | {{end}}kahvi patel</title>
+  <title>{{if ne .Kind "home"}}{{.Title}} | {{end}}{{.SiteTitle}}</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/color-theme.js"></script>
 </head>
 <body>
   <header>
     <nav aria-label="main navigation">
-      <a href="/">home</a> · <a href="/writing/">writing</a> · <a href="/book-shelf/">book shelf</a> · <a href="/projects/">projects</a> <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>
+      {{range $i, $link := .Nav}}{{if $i}} · {{end}}<a href="{{$link.URL}}">{{$link.Title}}</a>{{end}} <span id="color-theme-separator" aria-hidden="true" hidden>·</span> <button id="color-theme-toggle" type="button" hidden>change theme</button>
     </nav>
   </header>
   <main>
     {{if eq .Kind "home"}}
-      <h1>kahvi patel</h1>
+      <h1>{{.Article.Title}}</h1>
       {{.Article.Body}}
       <h2>recent writing</h2>
       {{template "list" .}}
-      <p><a href="/writing/">all writing →</a></p>
+      <p><a href="{{.WritingURL}}">all writing →</a></p>
     {{else if eq .Kind "writing"}}
-      <h1>writing</h1>
+      <h1>{{.Article.Title}}</h1>
+      {{.Article.Body}}
       {{template "list" .}}
     {{else if eq .Kind "books"}}
       <h1>{{.Article.Title}}</h1>

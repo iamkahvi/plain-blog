@@ -44,8 +44,8 @@ func TestBuildArtifacts(t *testing.T) {
 	if err := os.Rename(filepath.Join(root, "content"), source); err != nil {
 		t.Fatal(err)
 	}
-	put(t, source, "about/about.md", "---\ntitle: Vault\n---\nFrom the vault.\n")
-	put(t, root, "content/about/about.md", "---\ntitle: Checkout\n---\nFrom the checkout.\n")
+	put(t, source, "home/home.md", "---\ntitle: Vault\npermalink: /\n---\nFrom the vault.\n")
+	put(t, root, "content/home/home.md", "---\ntitle: Checkout\npermalink: /\n---\nFrom the checkout.\n")
 	for _, args := range [][]string{
 		{"init", "--quiet", "--initial-branch=main", source},
 		{"-C", source, "add", "."},
@@ -78,7 +78,7 @@ func TestBuildArtifacts(t *testing.T) {
 	if err := buildArtifacts(root, testArtifactsConfig(), git); err != nil {
 		t.Fatal(err)
 	}
-	page, err := os.ReadFile(filepath.Join(root, "dist/about/index.html"))
+	page, err := os.ReadFile(filepath.Join(root, "dist/index.html"))
 	if err != nil || !strings.Contains(string(page), "From the vault.") || strings.Contains(string(page), "From the checkout.") {
 		t.Fatalf("build did not use Artifacts content: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestBuildArtifactsInvalidContentCleansUp(t *testing.T) {
 	git := func(args, _ []string) ([]byte, error) {
 		if args[0] == "clone" {
 			content = args[len(args)-1]
-			put(t, content, "about/about.md", "invalid content")
+			put(t, content, "home/home.md", "invalid content")
 			return nil, nil
 		}
 		return []byte("revision"), nil

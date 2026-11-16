@@ -67,33 +67,16 @@ Without `BLOG_CONTENT_DIR`, local commands use the repository's `content/` direc
 
 ## Content structure
 
-- `content/`
-  - `about/`
-    - `about.md` — required
-      - `title`
-  - `projects/`
-    - `projects.md` — required
-      - `title`
-  - `pronounce/`
-    - `pronounce.md` — required
-      - `title`
-  - `book-shelf/`
-    - `book-shelf.md` — required; contains the page title and introduction
-    - `books/` — optional
-      - `<filename>.md` — each file needs `title`, `author`, and `date` (`YYYY-MM-DD`)
-  - `posts/` — optional
-    - `<filename>.md`
-      - `title`
-      - `date` — `YYYY-MM-DD`
-  - `newsletter/` — optional
-    - `<filename>.md`
-      - `title`
-      - `date` — `YYYY-MM-DD`
+Each page uses `content/<name>/<name>.md`. Its YAML front matter needs a `title` and a root-relative `permalink` that ends in `/`. The generator uses the permalink as the route. Page routes must be unique. The navigation contains `home`, `writing`, `book-shelf`, and `projects`, in that order.
 
-Books use `content/book-shelf/books/*.md`. The book shelf lists them by date, newest first. Each book body contains its notes. Books with the same date sort by title. As on the original site, the page does not show dates before 2019.
+`content/home/home.md` must use `permalink: /`. Its `title` sets the home heading and site title. The `writing` and `book-shelf` pages contain the introductions for their respective lists.
 
-Posts use `content/posts/*.md`; newsletters use `content/newsletter/*.md`. Each file needs YAML front matter with a title and a `YYYY-MM-DD` date. Entries publish by default. Set `published: false` to omit a post or newsletter. The flag does not control books or fixed pages. Both use `/writing/<filename>/`, so filenames must be unique across both directories.
+Posts use `content/writing/posts/*.md`; newsletters use `content/writing/newsletter/*.md`. Each file needs a `title` and a `date` in `YYYY-MM-DD` format. Entries publish by default. Set `published: false` to omit an entry. Both collections use the writing page permalink plus the filename, so filenames must be unique across both directories.
 
-If an entry has a `substack` URL, the lists link to it in a new tab. Its local page remains available. External web links have an icon and open in a new tab by default. Links to `kahvipatel.com` and `www.kahvipatel.com` stay in the same tab. An explicit link target takes precedence. The site also includes `content/about/about.md`, `content/projects/projects.md`, and `content/pronounce/pronounce.md`.
+Books use `content/book-shelf/books/*.md`. Each file needs `title`, `author`, and `date` in `YYYY-MM-DD` format. The book shelf lists books by date, newest first. Books with the same date sort by title. The page does not show dates before 2019.
 
-Place static files in `public/`. For example, `public/assets/photo.jpg` becomes `/assets/photo.jpg`. Some existing content refers to local assets that are not present in this repository. Add those files to `public/` to restore those links. Markdown and its embedded HTML are trusted source content.
+Root Markdown files with `render: raw` in their front matter are copied to the site root without front matter. For example, `content/resume.md` becomes `/resume.md`.
+
+If an entry has a `substack` URL, the lists link to it in a new tab. Its local page remains available. Absolute HTTP and HTTPS links and protocol-relative web links have an icon and open in a new tab by default. This includes links to the site's own domain. An explicit link target takes precedence.
+
+Place static files in `public/`. For example, `public/assets/photo.jpg` becomes `/assets/photo.jpg`. Markdown and its embedded HTML are trusted source content.

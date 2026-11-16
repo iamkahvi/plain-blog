@@ -28,6 +28,7 @@ import (
 
 type article struct {
 	Title, Description, Date, URL, Substack, Author string
+	Permalink, Render                               string
 	Published                                       *bool
 	Body                                            template.HTML
 }
@@ -47,11 +48,14 @@ type bookYear struct {
 	Books []book
 }
 
+type navLink struct{ Title, URL string }
+
 type page struct {
-	Title, Kind string
-	Article     article
-	Years       []yearGroup
-	BookYears   []bookYear
+	Title, Kind, SiteTitle, WritingURL string
+	Nav                                []navLink
+	Article                            article
+	Years                              []yearGroup
+	BookYears                          []bookYear
 }
 
 var markdown = goldmark.New(
@@ -60,18 +64,37 @@ var markdown = goldmark.New(
 	goldmark.WithRendererOptions(html.WithUnsafe()),
 )
 
-func readArticle(file, url, kind string) (article, error) {
+func readContent(file string) (article, []byte, error) {
 	var a article
 	data, err := os.ReadFile(file)
 	if err != nil {
+		return a, nil, err
+	}
+	first := bytes.IndexByte(data, '\n')
+	if first < 0 || string(bytes.TrimSuffix(data[:first], []byte("\r"))) != "---" {
+		return a, nil, fmt.Errorf("%s: missing YAML front matter", file)
+	}
+	for start := first + 1; start < len(data); {
+		end := bytes.IndexByte(data[start:], '\n')
+		if end < 0 {
+			break
+		}
+		end += start
+		if string(bytes.TrimSuffix(data[start:end], []byte("\r"))) == "---" {
+			if err := yaml.Unmarshal(data[first+1:start], &a); err != nil {
+				return a, nil, fmt.Errorf("%s: %w", file, err)
+			}
+			return a, data[end+1:], nil
+		}
+		start = end + 1
+	}
+	return a, nil, fmt.Errorf("%s: missing YAML front matter", file)
+}
+
+func readArticle(file, url, kind string) (article, error) {
+	a, body, err := readContent(file)
+	if err != nil {
 		return a, err
-	}
-	parts := bytes.SplitN(bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n")), []byte("---\n"), 3)
-	if len(parts) != 3 || len(parts[0]) != 0 {
-		return a, fmt.Errorf("%s: missing YAML front matter", file)
-	}
-	if err := yaml.Unmarshal(parts[1], &a); err != nil {
-		return a, fmt.Errorf("%s: %w", file, err)
 	}
 	if a.Title == "" {
 		return a, fmt.Errorf("%s: missing title", file)
@@ -81,11 +104,11 @@ func readArticle(file, url, kind string) (article, error) {
 			return a, fmt.Errorf("%s: invalid date %q", file, a.Date)
 		}
 	}
-	var body bytes.Buffer
-	if err := markdown.Convert(parts[2], &body); err != nil {
+	var rendered bytes.Buffer
+	if err := markdown.Convert(body, &rendered); err != nil {
 		return a, fmt.Errorf("%s: %w", file, err)
 	}
-	a.Body, a.URL = template.HTML(body.String()), url // Content is trusted source HTML.
+	a.Body, a.URL = template.HTML(rendered.String()), url // Content is trusted source HTML.
 	return a, nil
 }
 
@@ -186,14 +209,52 @@ func buildWithContent(root, content string) (map[string][]byte, error) {
 				return fmt.Errorf("output conflict: %s and %s", source, url)
 			}
 		}
-		if url == "/__reload" {
+		if url == "/__reload" || url == "/__reload/" {
 			return fmt.Errorf("reserved output path: %s", url)
 		}
 		outputs[name] = url
 		files[url] = data
 		return nil
 	}
+	pages := make(map[string]article)
+	matches, err := filepath.Glob(filepath.Join(content, "*", "*.md"))
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range matches {
+		name := filepath.Base(filepath.Dir(file))
+		if filepath.Base(file) != name+".md" {
+			continue
+		}
+		a, err := readArticle(file, "", "page")
+		if err != nil {
+			return nil, err
+		}
+		if a.Permalink == "" || a.Permalink[0] != '/' || !strings.HasSuffix(a.Permalink, "/") ||
+			strings.ContainsAny(a.Permalink, "\\?#%\x00\r\n\t") || (a.Permalink != "/" && path.Clean(a.Permalink) != strings.TrimSuffix(a.Permalink, "/")) {
+			return nil, fmt.Errorf("%s: invalid permalink %q", file, a.Permalink)
+		}
+		a.URL = a.Permalink
+		pages[name] = a
+	}
+	home, ok := pages["home"]
+	if !ok || home.URL != "/" {
+		return nil, fmt.Errorf("home/home.md must have permalink /")
+	}
+	var nav []navLink
+	for _, name := range []string{"home", "writing", "book-shelf", "projects"} {
+		a, ok := pages[name]
+		if !ok {
+			return nil, fmt.Errorf("missing navigation page %s/%s.md", name, name)
+		}
+		title := a.Title
+		if name == "home" {
+			title = "home"
+		}
+		nav = append(nav, navLink{title, a.URL})
+	}
 	render := func(url string, p page) error {
+		p.SiteTitle, p.WritingURL, p.Nav = home.Title, pages["writing"].URL, nav
 		var out bytes.Buffer
 		if err := layout.Execute(&out, p); err != nil {
 			return err
@@ -204,28 +265,12 @@ func buildWithContent(root, content string) (map[string][]byte, error) {
 		}
 		return add(url, data)
 	}
-	about, err := readArticle(filepath.Join(content, "about/about.md"), "/about/", "page")
-	if err != nil {
-		return nil, err
-	}
-	pronounce, err := readArticle(filepath.Join(content, "pronounce/pronounce.md"), "/pronounce/", "page")
-	if err != nil {
-		return nil, err
-	}
-	projects, err := readArticle(filepath.Join(content, "projects/projects.md"), "/projects/", "page")
-	if err != nil {
-		return nil, err
-	}
-	bookShelf, err := readArticle(filepath.Join(content, "book-shelf/book-shelf.md"), "/book-shelf/", "page")
-	if err != nil {
-		return nil, err
-	}
 	bookYears, err := readBooks(content)
 	if err != nil {
 		return nil, err
 	}
 	var articles []article
-	for _, dir := range []string{"posts", "newsletter"} {
+	for _, dir := range []string{"writing/posts", "writing/newsletter"} {
 		matches, err := filepath.Glob(filepath.Join(content, dir, "*.md"))
 		if err != nil {
 			return nil, err
@@ -235,7 +280,7 @@ func buildWithContent(root, content string) (map[string][]byte, error) {
 			if slug == "" || slug == "." || slug == ".." {
 				return nil, fmt.Errorf("%s: invalid filename", file)
 			}
-			a, err := readArticle(file, "/writing/"+slug+"/", "article")
+			a, err := readArticle(file, pages["writing"].URL+slug+"/", "article")
 			if err != nil {
 				return nil, err
 			}
@@ -258,19 +303,33 @@ func buildWithContent(root, content string) (map[string][]byte, error) {
 	if len(recent) > 5 {
 		recent = recent[:5]
 	}
-	for _, item := range []struct {
-		url string
-		p   page
-	}{
-		{"/", page{Title: "home", Kind: "home", Article: about, Years: groupByYear(recent)}},
-		{"/about/", page{Title: about.Title, Kind: "page", Article: about}},
-		{"/projects/", page{Title: projects.Title, Kind: "page", Article: projects}},
-		{"/pronounce/", page{Title: pronounce.Title, Kind: "page", Article: pronounce}},
-		{"/book-shelf/", page{Title: bookShelf.Title, Kind: "books", Article: bookShelf, BookYears: bookYears}},
-		{"/writing/", page{Title: "writing", Kind: "writing", Years: groupByYear(articles)}},
-	} {
-		if err := render(item.url, item.p); err != nil {
+	for name, a := range pages {
+		p := page{Title: a.Title, Kind: "page", Article: a}
+		switch name {
+		case "home":
+			p.Kind, p.Years = "home", groupByYear(recent)
+		case "writing":
+			p.Kind, p.Years = "writing", groupByYear(articles)
+		case "book-shelf":
+			p.Kind, p.BookYears = "books", bookYears
+		}
+		if err := render(a.URL, p); err != nil {
 			return nil, err
+		}
+	}
+	rawFiles, err := filepath.Glob(filepath.Join(content, "*.md"))
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range rawFiles {
+		a, body, err := readContent(file)
+		if err != nil {
+			return nil, err
+		}
+		if a.Render == "raw" {
+			if err := add("/"+filepath.Base(file), body); err != nil {
+				return nil, err
+			}
 		}
 	}
 	css, err := os.ReadFile(filepath.Join(root, "style.css"))

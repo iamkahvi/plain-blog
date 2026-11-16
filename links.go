@@ -85,8 +85,7 @@ func externalWebLink(token *html.Token) bool {
 			if err != nil || u.Host == "" || (u.Scheme != "" && !strings.EqualFold(u.Scheme, "http") && !strings.EqualFold(u.Scheme, "https")) {
 				return false
 			}
-			host := strings.TrimSuffix(strings.ToLower(u.Hostname()), ".")
-			return host != "kahvipatel.com" && host != "www.kahvipatel.com"
+			return true
 		}
 	}
 	return false

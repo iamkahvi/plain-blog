@@ -27,8 +27,8 @@ func TestExternalLinks(t *testing.T) {
 		{"lookalike host", `<a href="https://kahvipatel.com.example.org">link</a>`, markedLink(`<a href="https://kahvipatel.com.example.org" target="_blank" rel="noopener noreferrer">link</a>`, true)},
 		{"relative", `<a href="/writing/">link</a>`, `<a href="/writing/">link</a>`},
 		{"fragment", `<a href="#section">link</a>`, `<a href="#section">link</a>`},
-		{"canonical host", `<a href="https://kahvipatel.com/page">link</a>`, `<a href="https://kahvipatel.com/page">link</a>`},
-		{"www host", `<a href="//WWW.KAHVIPATEL.COM./page">link</a>`, `<a href="//WWW.KAHVIPATEL.COM./page">link</a>`},
+		{"canonical host", `<a href="https://kahvipatel.com/page">link</a>`, markedLink(`<a href="https://kahvipatel.com/page" target="_blank" rel="noopener noreferrer">link</a>`, true)},
+		{"www host", `<a href="//WWW.KAHVIPATEL.COM./page">link</a>`, markedLink(`<a href="//WWW.KAHVIPATEL.COM./page" target="_blank" rel="noopener noreferrer">link</a>`, true)},
 		{"mail", `<a href="mailto:hi@example.com">link</a>`, `<a href="mailto:hi@example.com">link</a>`},
 		{"other scheme", `<a href="ftp://example.com/file">link</a>`, `<a href="ftp://example.com/file">link</a>`},
 		{"invalid", `<a href="http://[bad">link</a>`, `<a href="http://[bad">link</a>`},
@@ -60,7 +60,7 @@ func TestExternalLinks(t *testing.T) {
 
 func TestBuildExternalLinks(t *testing.T) {
 	root := fixture(t)
-	put(t, root, "content/about/about.md", "---\ntitle: about\n---\n"+`[External](https://example.com) [Internal](/writing/) https://example.org
+	put(t, root, "content/home/home.md", "---\ntitle: Test Blog\npermalink: /\n---\n"+`[External](https://example.com) [Internal](/writing/) [Own](https://www.mysite.test) https://example.org
 
 <a href="https://example.net" rel="author">raw link</a>
 `)
@@ -68,10 +68,11 @@ func TestBuildExternalLinks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, page := range []string{"/", "/about/"} {
+	for _, page := range []string{"/"} {
 		for _, want := range []string{
 			markedLink(`<a href="https://example.com" target="_blank" rel="noopener noreferrer">External</a>`, true),
 			`<a href="/writing/">Internal</a>`,
+			markedLink(`<a href="https://www.mysite.test" target="_blank" rel="noopener noreferrer">Own</a>`, true),
 			markedLink(`<a href="https://example.org" target="_blank" rel="noopener noreferrer">https://example.org</a>`, true),
 			markedLink(`<a href="https://example.net" rel="author noopener noreferrer" target="_blank">raw link</a>`, true),
 		} {
