@@ -64,19 +64,25 @@ func TestBuild(t *testing.T) {
 			t.Errorf("unexpected output at %s", url)
 		}
 	}
+	externalLink := markedLink(`<a href="https://example.com/p/february?one=1&amp;two=2" target="_blank" rel="noopener noreferrer">February 2026</a>`, true)
 	writing := string(files["/writing/"])
 	if strings.Contains(writing, "Draft") || !strings.Contains(writing, "First &amp; best") || strings.Index(writing, "Latest") > strings.Index(writing, "First &amp; best") {
 		t.Errorf("unexpected list: %s", writing)
 	}
 	if strings.Count(writing, "<h2>2026</h2>") != 1 || !strings.Contains(writing, "<h2>2020</h2>") ||
-		!strings.Contains(writing, `<a href="https://example.com/p/february?one=1&amp;two=2" target="_blank" rel="noopener noreferrer">February 2026</a> - <time datetime="2026-03-13">03.13</time>`) ||
+		!strings.Contains(writing, externalLink+` - <time datetime="2026-03-13">03.13</time>`) ||
 		!strings.Contains(writing, `<a href="/writing/first/">First &amp; best</a>`) ||
 		!strings.Contains(writing, `<a href="/writing/latest/">Latest</a>`) || strings.Contains(writing, "<small>") {
 		t.Errorf("unexpected year groups or list format: %s", writing)
 	}
 	home := string(files["/"])
-	if !strings.Contains(home, "<h3>2026</h3>") || !strings.Contains(home, `<a href="https://example.com/p/february?one=1&amp;two=2" target="_blank" rel="noopener noreferrer">February 2026</a>`) {
-		t.Error("home list does not link to Substack")
+	if !strings.Contains(home, "<h3>2026</h3>") || !strings.Contains(home, externalLink) {
+		t.Error("home list does not link to Substack with the external link icon")
+	}
+	for _, page := range []string{home, writing} {
+		if strings.Count(page, `class="external-link-icon"`) != 1 {
+			t.Error("list should show the icon for the Substack link")
+		}
 	}
 	if !strings.Contains(string(files["/about/"]), "Hello <strong>world</strong>") || !strings.Contains(string(files["/pronounce/"]), "<audio controls>") {
 		t.Error("Markdown or trusted HTML was not rendered")
@@ -85,7 +91,7 @@ func TestBuild(t *testing.T) {
 		t.Error("undated page has a dated article header")
 	}
 	projects := string(files["/projects/"])
-	if !strings.Contains(projects, "<h1>projects</h1>") || !strings.Contains(projects, `<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>`) {
+	if !strings.Contains(projects, "<h1>projects</h1>") || !strings.Contains(projects, markedLink(`<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>`, true)) {
 		t.Error("projects page was not rendered from Markdown")
 	}
 	post := string(files["/writing/first/"])

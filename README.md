@@ -94,6 +94,6 @@ Books use `content/book-shelf/books/*.md`. The book shelf lists them by date, ne
 
 Posts use `content/posts/*.md`; newsletters use `content/newsletter/*.md`. Each file needs YAML front matter with a title and a `YYYY-MM-DD` date. Entries publish by default. Set `published: false` to omit a post or newsletter. The flag does not control books or fixed pages. Both use `/writing/<filename>/`, so filenames must be unique across both directories.
 
-If an entry has a `substack` URL, the lists link to it in a new tab. Its local page remains available. External web links open in a new tab by default. Links to `kahvipatel.com` and `www.kahvipatel.com` stay in the same tab. An explicit link target takes precedence. The site also includes `content/about/about.md`, `content/projects/projects.md`, and `content/pronounce/pronounce.md`.
+If an entry has a `substack` URL, the lists link to it in a new tab. Its local page remains available. External web links have an icon and open in a new tab by default. Links to `kahvipatel.com` and `www.kahvipatel.com` stay in the same tab. An explicit link target takes precedence. The site also includes `content/about/about.md`, `content/projects/projects.md`, and `content/pronounce/pronounce.md`.
 
 Place static files in `public/`. For example, `public/assets/photo.jpg` becomes `/assets/photo.jpg`. Some existing content refers to local assets that are not present in this repository. Add those files to `public/` to restore those links. Markdown and its embedded HTML are trusted source content.
