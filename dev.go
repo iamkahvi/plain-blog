@@ -44,6 +44,14 @@ func fingerprint(root string) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
+func redirectDirectory(w http.ResponseWriter, r *http.Request, url string) {
+	destination := url + "/"
+	if r.URL.RawQuery != "" {
+		destination += "?" + r.URL.RawQuery
+	}
+	http.Redirect(w, r, destination, http.StatusMovedPermanently)
+}
+
 func serve(root, addr string) error {
 	files, err := build(root)
 	if err != nil {
@@ -99,7 +107,7 @@ func serve(root, addr string) error {
 		}
 		if !ok && !strings.HasSuffix(url, "/") {
 			if _, ok := currentFiles[url+"/"]; ok {
-				http.Redirect(w, r, url+"/", http.StatusMovedPermanently)
+				redirectDirectory(w, r, url)
 				return
 			}
 		}

@@ -31,6 +31,10 @@ go test ./...
 node --test
 ```
 
+## Font selection
+
+Geist Serif is the default font. Add `?font=baskerville`, `?font=geist`, or `?font=times` to a page URL to select a font. Internal links retain the selected parameter. Font selection requires JavaScript.
+
 ## Obsidian content
 
 The vault folder is the content source. The Cloudflare Artifacts Sync plugin copies it to an Artifacts repository. Workers Builds fetches that repository when a push to GitHub `main` starts a build. You can also start a build from Obsidian without a GitHub push. A content sync alone does not start a build.

@@ -27,11 +27,13 @@ func fixture(t *testing.T) string {
 	}
 	put(t, root, "templates/layout.html", string(layout))
 	put(t, root, "public/style.css", "body {}")
-	themeScript, err := os.ReadFile("public/theme-mode.js")
-	if err != nil {
-		t.Fatal(err)
+	for _, name := range []string{"public/theme-mode.js", "public/font-mode.js"} {
+		script, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		put(t, root, name, string(script))
 	}
-	put(t, root, "public/theme-mode.js", string(themeScript))
 	put(t, root, "content/home/home.md", "---\ntitle: Test Blog\npermalink: /\n---\nHello **world**.\n")
 	put(t, root, "content/writing/writing.md", "---\ntitle: writing\npermalink: /writing/\n---\nWriting introduction.\n")
 	put(t, root, "content/projects/projects.md", "---\ntitle: projects\npermalink: /projects/\n---\n- https://example.com\n")
@@ -57,7 +59,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/theme-mode.js", "/assets/photo.txt"} {
+	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/theme-mode.js", "/font-mode.js", "/assets/photo.txt"} {
 		if _, ok := files[url]; !ok {
 			t.Errorf("missing %s", url)
 		}
@@ -124,6 +126,10 @@ func TestBuild(t *testing.T) {
 		if !strings.Contains(page, `<script src="/theme-mode.js"></script>`) {
 			t.Error("theme script is missing")
 		}
+		if !strings.Contains(page, `<script src="/font-mode.js"></script>`) ||
+			strings.Index(page, `<script src="/font-mode.js"></script>`) > strings.Index(page, `<link rel="stylesheet"`) {
+			t.Error("font script must appear before the stylesheet")
+		}
 	}
 	newsletter := string(files["/writing/latest/"])
 	if !strings.Contains(newsletter, `<time datetime="2026-04-16">april 16, 2026</time>`) || strings.Contains(newsletter, " · newsletter") {
@@ -144,14 +150,19 @@ func TestBuild(t *testing.T) {
 	}
 }
 
-func TestGeistSerifAssets(t *testing.T) {
+func TestFontAssets(t *testing.T) {
 	root := fixture(t)
-	for _, name := range []string{"public/style.css", "public/fonts/GeistSerif-Regular.woff2", "public/fonts/OFL.txt"} {
-		data, err := os.ReadFile(name)
+	assets := []string{
+		"/fonts/GeistSerif-Regular.woff2", "/fonts/OFL.txt", "/fonts/LibreBaskerville-OFL.txt",
+		"/fonts/libre-baskerville-latin-wght-normal.woff2", "/fonts/libre-baskerville-latin-wght-italic.woff2",
+		"/fonts/libre-baskerville-latin-ext-wght-normal.woff2", "/fonts/libre-baskerville-latin-ext-wght-italic.woff2",
+	}
+	for _, name := range append([]string{"/style.css"}, assets...) {
+		data, err := os.ReadFile("public" + name)
 		if err != nil {
 			t.Fatal(err)
 		}
-		put(t, root, name, string(data))
+		put(t, root, "public"+name, string(data))
 	}
 
 	files, err := build(root)
@@ -159,13 +170,17 @@ func TestGeistSerifAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 	css := string(files["/style.css"])
-	if !strings.Contains(css, `url("/fonts/GeistSerif-Regular.woff2")`) ||
-		!strings.Contains(css, `font: 1rem/1.6 "Geist Serif"`) {
-		t.Error("stylesheet does not load and use Geist Serif")
+	for _, text := range []string{`font: 1rem/1.6 "Geist Serif"`, `:root[data-font="baskerville"] body { font-family: "Libre Baskerville"`, `:root[data-font="times"] body { font-family: Times`} {
+		if !strings.Contains(css, text) {
+			t.Errorf("stylesheet is missing %s", text)
+		}
 	}
-	for _, url := range []string{"/fonts/GeistSerif-Regular.woff2", "/fonts/OFL.txt"} {
+	for _, url := range assets {
 		if len(files[url]) == 0 {
 			t.Errorf("missing font asset %s", url)
+		}
+		if strings.HasSuffix(url, ".woff2") && !strings.Contains(css, `url("`+url+`")`) {
+			t.Errorf("stylesheet does not reference %s", url)
 		}
 	}
 }
