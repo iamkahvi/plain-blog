@@ -91,3 +91,9 @@ Root Markdown files with `render: raw` in their front matter are copied to the s
 If an entry has a `substack` URL, the lists link to it in a new tab. Its local page remains available. Absolute HTTP and HTTPS links and protocol-relative web links have an icon and open in a new tab by default. This includes links to the site's own domain. An explicit link target takes precedence.
 
 Place static files in `public/`. For example, `public/assets/photo.jpg` becomes `/assets/photo.jpg`. Markdown and its embedded HTML are trusted source content.
+
+## Search metadata
+
+Pages and posts can set `description` in their front matter. If it is absent, the generator uses the first non-empty paragraph. It omits the meta description when neither is available.
+
+The generator uses `https://plain.kahvipatel.com` for canonical links and `/sitemap.xml`. Published local pages and posts appear in the sitemap. Entries with a `substack` URL have no canonical link and do not appear in the sitemap. Their index policy is not yet set. Drafts, raw files, and assets do not appear in the sitemap. Submit the sitemap URL to Google Search Console after deployment.

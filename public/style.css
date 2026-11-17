@@ -47,6 +47,12 @@
   font-weight: 400;
   font-display: swap;
 }
+/* Match the fallback width to Geist Serif while the web font loads. */
+@font-face {
+  font-family: "Geist Serif Fallback";
+  src: local("Times New Roman"), local("Times");
+  size-adjust: 110%;
+}
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --c-main: #D5ACA9;
@@ -74,7 +80,7 @@ body {
   padding: 0 1rem;
   color: var(--c-text);
   background: var(--c-background);
-  font: 1rem/1.6 "Geist Serif", Times, "Times New Roman", serif;
+  font: 1rem/1.6 "Geist Serif", "Geist Serif Fallback", Times, "Times New Roman", serif;
 }
 :root[data-font="baskerville"] body { font-family: "Libre Baskerville", Times, "Times New Roman", serif; }
 :root[data-font="times"] body { font-family: Times, "Times New Roman", serif; }

@@ -86,8 +86,13 @@ func buildWithContent(root, content string) (map[string][]byte, error) {
 		}
 		nav = append(nav, navLink{title, a.URL})
 	}
+	var sitemapURLs []string
 	render := func(url string, p page) error {
 		p.SiteTitle, p.WritingURL, p.Nav = home.Title, pages["writing"].URL, nav
+		p.Description = articleDescription(p.Article)
+		if p.Article.Substack == "" {
+			p.Canonical = canonicalURL(url)
+		}
 		var out bytes.Buffer
 		if err := layout.Execute(&out, p); err != nil {
 			return err
@@ -96,7 +101,13 @@ func buildWithContent(root, content string) (map[string][]byte, error) {
 		if err != nil {
 			return err
 		}
-		return add(url, data)
+		if err := add(url, data); err != nil {
+			return err
+		}
+		if p.Canonical != "" {
+			sitemapURLs = append(sitemapURLs, p.Canonical)
+		}
+		return nil
 	}
 	bookYears, err := readBooks(content)
 	if err != nil {
@@ -149,6 +160,13 @@ func buildWithContent(root, content string) (map[string][]byte, error) {
 		if err := render(a.URL, p); err != nil {
 			return nil, err
 		}
+	}
+	sitemap, err := makeSitemap(sitemapURLs)
+	if err != nil {
+		return nil, err
+	}
+	if err := add("/sitemap.xml", sitemap); err != nil {
+		return nil, err
 	}
 	rawFiles, err := filepath.Glob(filepath.Join(content, "*.md"))
 	if err != nil {

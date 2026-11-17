@@ -44,6 +44,7 @@ type navLink struct{ Title, URL string }
 
 type page struct {
 	Title, Kind, SiteTitle, WritingURL string
+	Description, Canonical             string
 	Nav                                []navLink
 	Article                            article
 	Years                              []yearGroup

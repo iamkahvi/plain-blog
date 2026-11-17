@@ -170,7 +170,12 @@ func TestFontAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 	css := string(files["/style.css"])
-	for _, text := range []string{`font: 1rem/1.6 "Geist Serif"`, `:root[data-font="baskerville"] body { font-family: "Libre Baskerville"`, `:root[data-font="times"] body { font-family: Times`} {
+	for _, text := range []string{
+		`font: 1rem/1.6 "Geist Serif", "Geist Serif Fallback", Times, "Times New Roman", serif`,
+		`font-family: "Geist Serif Fallback"`, `src: local("Times New Roman"), local("Times")`, `size-adjust: 110%`,
+		`:root[data-font="baskerville"] body { font-family: "Libre Baskerville"`,
+		`:root[data-font="times"] body { font-family: Times`,
+	} {
 		if !strings.Contains(css, text) {
 			t.Errorf("stylesheet is missing %s", text)
 		}

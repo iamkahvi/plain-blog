@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{if ne .Kind "home"}}{{.Title}} | {{end}}{{.SiteTitle}}</title>
+  {{if .Description}}<meta name="description" content="{{.Description}}">{{end}}
+  {{if .Canonical}}<link rel="canonical" href="{{.Canonical}}">{{end}}
   <script src="/font-mode.js"></script>
   <link rel="stylesheet" href="/style.css">
   <script src="/theme-mode.js"></script>
