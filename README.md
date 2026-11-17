@@ -88,7 +88,9 @@ Books use `content/book-shelf/books/*.md`. Each file needs `title`, `author`, an
 
 Root Markdown files with `render: raw` in their front matter are copied to the site root without front matter. For example, `content/resume.md` becomes `/resume.md`.
 
-If an entry has a `substack` URL, the lists link to it in a new tab. Its local page remains available. Absolute HTTP and HTTPS links and protocol-relative web links have an icon and open in a new tab by default. This includes links to the site's own domain. An explicit link target takes precedence.
+If an entry has a `substack` URL, the lists link to it in a new tab. Add `?local` to use its local page instead. Internal links retain this parameter. This option requires JavaScript; without it, the lists link to Substack. Entries without a `substack` URL always link to their local pages.
+
+Absolute HTTP and HTTPS links and protocol-relative web links have an icon and open in a new tab by default. This includes links to the site's own domain. An explicit link target takes precedence.
 
 Place static files in `public/`. For example, `public/assets/photo.jpg` becomes `/assets/photo.jpg`. Markdown and its embedded HTML are trusted source content.
 

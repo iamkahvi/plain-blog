@@ -9,6 +9,7 @@
   <script src="/font-mode.js"></script>
   <link rel="stylesheet" href="/style.css">
   <script src="/theme-mode.js"></script>
+  <script src="/newsletter-links.js"></script>
 </head>
 <body>
   <header>
@@ -60,7 +61,7 @@
 {{range .Years}}
   {{if ne $.Kind "home"}}<h2>{{.Year}}</h2><ul class="articles">{{end}}
     {{range .Articles}}
-      <li><a href="{{if .Substack}}{{.Substack}}{{else}}{{.URL}}{{end}}"{{if .Substack}} target="_blank" rel="noopener noreferrer"{{end}}>{{.Title}}</a> - <time datetime="{{.Date}}">{{shortDate .Date}}</time></li>
+      <li>{{if .Substack}}<a href="{{.Substack}}" target="_blank" rel="noopener noreferrer" data-newsletter-substack>{{.Title}}</a><a href="{{.URL}}" data-newsletter-local hidden>{{.Title}}</a>{{else}}<a href="{{.URL}}">{{.Title}}</a>{{end}} - <time datetime="{{.Date}}">{{shortDate .Date}}</time></li>
     {{end}}
   {{if ne $.Kind "home"}}</ul>{{end}}
 {{end}}

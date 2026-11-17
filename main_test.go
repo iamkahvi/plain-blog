@@ -27,7 +27,7 @@ func fixture(t *testing.T) string {
 	}
 	put(t, root, "templates/layout.html", string(layout))
 	put(t, root, "public/style.css", "body {}")
-	for _, name := range []string{"public/theme-mode.js", "public/font-mode.js"} {
+	for _, name := range []string{"public/theme-mode.js", "public/font-mode.js", "public/newsletter-links.js"} {
 		script, err := os.ReadFile(name)
 		if err != nil {
 			t.Fatal(err)
@@ -59,7 +59,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/theme-mode.js", "/font-mode.js", "/assets/photo.txt"} {
+	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/theme-mode.js", "/font-mode.js", "/newsletter-links.js", "/assets/photo.txt"} {
 		if _, ok := files[url]; !ok {
 			t.Errorf("missing %s", url)
 		}
@@ -69,19 +69,20 @@ func TestBuild(t *testing.T) {
 			t.Errorf("unexpected output at %s", url)
 		}
 	}
-	externalLink := markedLink(`<a href="https://example.com/p/february?one=1&amp;two=2" target="_blank" rel="noopener noreferrer">February 2026</a>`, true)
+	externalLink := markedLink(`<a href="https://example.com/p/february?one=1&amp;two=2" target="_blank" rel="noopener noreferrer" data-newsletter-substack="">February 2026</a>`, true)
+	localLink := `<a href="/writing/february/" data-newsletter-local hidden>February 2026</a>`
 	writing := string(files["/writing/"])
 	if strings.Contains(writing, "Draft") || !strings.Contains(writing, "First &amp; best") || strings.Index(writing, "Latest") > strings.Index(writing, "First &amp; best") {
 		t.Errorf("unexpected list: %s", writing)
 	}
 	if strings.Count(writing, "<h2>2026</h2>") != 1 || !strings.Contains(writing, "<h2>2020</h2>") ||
-		!strings.Contains(writing, externalLink+` - <time datetime="2026-03-13">03.13</time>`) ||
+		!strings.Contains(writing, externalLink+localLink+` - <time datetime="2026-03-13">03.13</time>`) ||
 		!strings.Contains(writing, `<a href="/writing/first/">First &amp; best</a>`) ||
 		!strings.Contains(writing, `<a href="/writing/latest/">Latest</a>`) || strings.Contains(writing, "<small>") {
 		t.Errorf("unexpected year groups or list format: %s", writing)
 	}
 	home := string(files["/"])
-	if !strings.Contains(home, "<title>Test Blog</title>") || !strings.Contains(home, "<h1>Test Blog</h1>") || !strings.Contains(home, externalLink) {
+	if !strings.Contains(home, "<title>Test Blog</title>") || !strings.Contains(home, "<h1>Test Blog</h1>") || !strings.Contains(home, externalLink+localLink) {
 		t.Error("home list does not link to Substack with the external link icon")
 	}
 	if strings.Contains(home, "<h3>2026</h3>") || strings.Contains(home, "<h3>2020</h3>") || strings.Contains(home, "<h2>2026</h2>") || strings.Contains(home, "<h2>2020</h2>") || strings.Count(home, `<ul class="articles">`) != 1 || !strings.Contains(home, "First &amp; best") {
@@ -125,6 +126,9 @@ func TestBuild(t *testing.T) {
 	for _, page := range []string{home, writing, post} {
 		if !strings.Contains(page, `<script src="/theme-mode.js"></script>`) {
 			t.Error("theme script is missing")
+		}
+		if !strings.Contains(page, `<script src="/newsletter-links.js"></script>`) {
+			t.Error("newsletter links script is missing")
 		}
 		if !strings.Contains(page, `<script src="/font-mode.js"></script>`) ||
 			strings.Index(page, `<script src="/font-mode.js"></script>`) > strings.Index(page, `<link rel="stylesheet"`) {
