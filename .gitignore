@@ -1,3 +1,4 @@
+.DS_Store
 /dist/
 /.cloudflare/
 /node_modules/

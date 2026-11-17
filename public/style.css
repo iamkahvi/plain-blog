@@ -7,6 +7,13 @@
   --c-text: #222;
   --c-link: #687a73;
 }
+@font-face {
+  font-family: "Geist Serif";
+  src: url("/fonts/GeistSerif-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --c-main: #D5ACA9;
@@ -34,7 +41,7 @@ body {
   padding: 0 1rem;
   color: var(--c-text);
   background: var(--c-background);
-  font: 1rem/1.6 Times, "Times New Roman", serif;
+  font: 1rem/1.6 "Geist Serif", Times, "Times New Roman", serif;
 }
 nav { display: flex; flex-wrap: wrap; gap: .75rem; }
 #theme-toggle { font-size: .75rem; }

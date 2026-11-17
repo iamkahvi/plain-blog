@@ -22,7 +22,14 @@ Start the local server:
 go run . dev
 ```
 
-Open <http://127.0.0.1:8080/>. Changes to the content directory, `public/`, `layout.html`, and `style.css` rebuild the site and reload open pages. Restart the server after Go code changes. A failed build leaves the last valid site available.
+Open <http://127.0.0.1:8080/>. Changes to the content directory, `public/`, and `templates/layout.html` rebuild the site and reload open pages. Restart the server after Go code changes. A failed build leaves the last valid site available.
+
+Run the tests:
+
+```sh
+go test ./...
+node --test
+```
 
 ## Obsidian content
 
@@ -63,7 +70,7 @@ BLOG_CONTENT_DIR=/path/to/content
 
 The file is not tracked by Git. Shell environment variables take precedence. The `build` command does not read `.env.local`.
 
-Without `BLOG_CONTENT_DIR`, local commands use the repository's `content/` directory. `scripts/sync-blog-content.sh` copies repository content to `BLOG_CONTENT_DIR`. Do not run it after the vault becomes the source of truth.
+Without `BLOG_CONTENT_DIR`, local commands use the repository's `content/` directory.
 
 ## Content structure
 

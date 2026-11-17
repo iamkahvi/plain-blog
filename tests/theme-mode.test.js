@@ -3,7 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 
-const css = fs.readFileSync("style.css", "utf8");
+const css = fs.readFileSync("public/style.css", "utf8");
 const script = fs.readFileSync("public/theme-mode.js", "utf8");
 const light = css.match(/^:root\s*\{([^}]*)\}/);
 const dark = css.match(/@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root:not\(\[data-theme="light"\]\)\s*\{([^}]*)\}\s*\}/);

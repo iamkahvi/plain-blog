@@ -21,12 +21,12 @@ func put(t *testing.T, root, name, content string) {
 func fixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
-	layout, err := os.ReadFile("layout.html")
+	layout, err := os.ReadFile("templates/layout.html")
 	if err != nil {
 		t.Fatal(err)
 	}
-	put(t, root, "layout.html", string(layout))
-	put(t, root, "style.css", "body {}")
+	put(t, root, "templates/layout.html", string(layout))
+	put(t, root, "public/style.css", "body {}")
 	themeScript, err := os.ReadFile("public/theme-mode.js")
 	if err != nil {
 		t.Fatal(err)
@@ -141,6 +141,32 @@ func TestBuild(t *testing.T) {
 	}
 	if data, err := os.ReadFile(filepath.Join(root, "dist/writing/latest/index.html")); err != nil || !strings.Contains(string(data), "News") {
 		t.Errorf("invalid output: %v", err)
+	}
+}
+
+func TestGeistSerifAssets(t *testing.T) {
+	root := fixture(t)
+	for _, name := range []string{"public/style.css", "public/fonts/GeistSerif-Regular.woff2", "public/fonts/OFL.txt"} {
+		data, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		put(t, root, name, string(data))
+	}
+
+	files, err := build(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	css := string(files["/style.css"])
+	if !strings.Contains(css, `url("/fonts/GeistSerif-Regular.woff2")`) ||
+		!strings.Contains(css, `font: 1rem/1.6 "Geist Serif"`) {
+		t.Error("stylesheet does not load and use Geist Serif")
+	}
+	for _, url := range []string{"/fonts/GeistSerif-Regular.woff2", "/fonts/OFL.txt"} {
+		if len(files[url]) == 0 {
+			t.Errorf("missing font asset %s", url)
+		}
 	}
 }
 
@@ -385,5 +411,23 @@ func TestFingerprint(t *testing.T) {
 	last, err := fingerprint(root)
 	if err != nil || last == after {
 		t.Fatalf("deletion was not detected: %v", err)
+	}
+	for _, name := range []string{"templates/layout.html", "public/style.css"} {
+		put(t, root, name, "changed")
+		next, err := fingerprint(root)
+		if err != nil || next == last {
+			t.Fatalf("change to %s was not detected: %v", name, err)
+		}
+		last = next
+	}
+}
+
+func TestBuildRequiresStylesheet(t *testing.T) {
+	root := fixture(t)
+	if err := os.Remove(filepath.Join(root, "public/style.css")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := build(root); err == nil || !strings.Contains(err.Error(), "missing public/style.css") {
+		t.Fatalf("missing stylesheet accepted: %v", err)
 	}
 }
