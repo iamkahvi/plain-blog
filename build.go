@@ -23,6 +23,10 @@ func build(root string) (map[string][]byte, error) {
 }
 
 func buildWithContent(root, content string) (map[string][]byte, error) {
+	domain, err := siteDomain(root)
+	if err != nil {
+		return nil, err
+	}
 	layout, err := template.New("layout.html").Funcs(template.FuncMap{
 		"shortDate": func(value string) string { return value[5:7] + "." + value[8:10] },
 		"date": func(value string) (string, error) {
@@ -91,7 +95,7 @@ func buildWithContent(root, content string) (map[string][]byte, error) {
 		p.SiteTitle, p.WritingURL, p.Nav = home.Title, pages["writing"].URL, nav
 		p.Description = articleDescription(p.Article)
 		if p.Article.Substack == "" {
-			p.Canonical = canonicalURL(url)
+			p.Canonical = canonicalURL(domain, url)
 		}
 		var out bytes.Buffer
 		if err := layout.Execute(&out, p); err != nil {

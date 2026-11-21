@@ -19,10 +19,10 @@ func TestSEOMetadataAndSitemap(t *testing.T) {
 	for _, tc := range []struct {
 		path, description, canonical string
 	}{
-		{"/", "Hello world.", "https://plain.kahvipatel.com/"},
-		{"/writing/", "Writing introduction.", "https://plain.kahvipatel.com/writing/"},
-		{"/writing/first/", "A &lt;good&gt; &amp; &#34;useful&#34; post", "https://plain.kahvipatel.com/writing/first/"},
-		{"/writing/café & tea/", "Tea.", "https://plain.kahvipatel.com/writing/caf%C3%A9%20&amp;%20tea/"},
+		{"/", "Hello world.", "https://test.example.org/"},
+		{"/writing/", "Writing introduction.", "https://test.example.org/writing/"},
+		{"/writing/first/", "A &lt;good&gt; &amp; &#34;useful&#34; post", "https://test.example.org/writing/first/"},
+		{"/writing/café & tea/", "Tea.", "https://test.example.org/writing/caf%C3%A9%20&amp;%20tea/"},
 	} {
 		page := string(files[tc.path])
 		if !strings.Contains(page, `<meta name="description" content="`+tc.description+`">`) {
@@ -54,12 +54,12 @@ func TestSEOMetadataAndSitemap(t *testing.T) {
 			t.Errorf("sitemap is not sorted: %q", item.Location)
 		}
 	}
-	for _, location := range []string{"https://plain.kahvipatel.com/", "https://plain.kahvipatel.com/writing/first/", "https://plain.kahvipatel.com/writing/caf%C3%A9%20&%20tea/"} {
+	for _, location := range []string{"https://test.example.org/", "https://test.example.org/writing/first/", "https://test.example.org/writing/caf%C3%A9%20&%20tea/"} {
 		if !locations[location] {
 			t.Errorf("sitemap missing %s", location)
 		}
 	}
-	for _, location := range []string{"https://plain.kahvipatel.com/writing/february/", "https://plain.kahvipatel.com/writing/draft/", "https://plain.kahvipatel.com/resume.md"} {
+	for _, location := range []string{"https://test.example.org/writing/february/", "https://test.example.org/writing/draft/", "https://test.example.org/resume.md"} {
 		if locations[location] {
 			t.Errorf("sitemap unexpectedly includes %s", location)
 		}

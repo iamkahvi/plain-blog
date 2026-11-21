@@ -22,7 +22,7 @@ Start the local server:
 go run . dev
 ```
 
-Open <http://127.0.0.1:8080/>. Changes to the content directory, `public/`, and `templates/layout.html` rebuild the site and reload open pages. Restart the server after Go code changes. A failed build leaves the last valid site available.
+Open <http://127.0.0.1:8080/>. Changes to the content directory, `public/`, `site.yaml`, and `templates/layout.html` rebuild the site and reload open pages. Restart the server after Go code changes. A failed build leaves the last valid site available.
 
 Run the tests:
 
@@ -100,4 +100,4 @@ Place static files in `public/`. For example, `public/assets/photo.jpg` becomes 
 
 Pages and posts can set `description` in their front matter. If it is absent, the generator uses the first non-empty paragraph. It omits the meta description when neither is available.
 
-The generator uses `https://plain.kahvipatel.com` for canonical links and `/sitemap.xml`. Published local pages and posts appear in the sitemap. Entries with a `substack` URL have no canonical link and do not appear in the sitemap. Their index policy is not yet set. Drafts, raw files, and assets do not appear in the sitemap. Submit the sitemap URL to Google Search Console after deployment.
+Set `domain` in `site.yaml` to the site hostname, without a scheme or path. The generator uses HTTPS with this domain for canonical links and `/sitemap.xml`. Published local pages and posts appear in the sitemap. Entries with a `substack` URL have no canonical link and do not appear in the sitemap. Their index policy is not yet set. Drafts, raw files, and assets do not appear in the sitemap. Submit the sitemap URL to Google Search Console after deployment.

@@ -21,7 +21,7 @@ import (
 // fingerprint detects file additions, edits, and deletions without a platform-specific watcher.
 func fingerprint(root string) (string, error) {
 	h := sha256.New()
-	for _, file := range []string{contentDir(root), filepath.Join(root, "public"), filepath.Join(root, "templates", "layout.html")} {
+	for _, file := range []string{contentDir(root), filepath.Join(root, "public"), filepath.Join(root, "templates", "layout.html"), filepath.Join(root, "site.yaml")} {
 		if _, err := os.Stat(file); os.IsNotExist(err) && file == filepath.Join(root, "public") {
 			continue
 		} else if err != nil {

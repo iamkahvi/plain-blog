@@ -12,10 +12,8 @@ import (
 	"golang.org/x/net/html"
 )
 
-const siteHost = "plain.kahvipatel.com"
-
-func canonicalURL(route string) string {
-	return (&url.URL{Scheme: "https", Host: siteHost, Path: route}).String()
+func canonicalURL(domain, route string) string {
+	return (&url.URL{Scheme: "https", Host: domain, Path: route}).String()
 }
 
 // articleDescription uses an explicit description or the first paragraph of the page.

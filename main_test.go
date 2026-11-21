@@ -26,6 +26,7 @@ func fixture(t *testing.T) string {
 		t.Fatal(err)
 	}
 	put(t, root, "templates/layout.html", string(layout))
+	put(t, root, "site.yaml", "domain: test.example.org\n")
 	put(t, root, "public/style.css", "body {}")
 	for _, name := range []string{"public/theme-mode.js", "public/font-mode.js", "public/newsletter-links.js"} {
 		script, err := os.ReadFile(name)
