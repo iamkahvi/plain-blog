@@ -6,5 +6,12 @@ export default defineConfig({
     compatibilityDate: "2026-11-04",
     workersDev: true,
     previewUrls: false,
+    observability: {
+      logs: {
+        enabled: true,
+        invocationLogs: true,
+        persist: true,
+      },
+    },
   },
 });
