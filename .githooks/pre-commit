@@ -1,0 +1,41 @@
+#!/bin/sh
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+if git diff --cached --quiet -- ':(glob)**/*.go' ':(exclude,glob)**/*_test.go' go.mod go.sum scripts/build-linux.sh scripts/source-hash.sh; then
+	exit 0
+else
+	status=$?
+	if [ "$status" -ne 1 ]; then
+		exit "$status"
+	fi
+fi
+
+index=$(git rev-parse --path-format=absolute --git-path index)
+gitdir=$(git rev-parse --absolute-git-dir)
+case "$index" in
+	"$gitdir/index"|"$gitdir/index.lock") ;;
+	*)
+		echo 'Stage the Go changes and commit without file paths or --only.' >&2
+		exit 1
+		;;
+esac
+
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/blog-index.XXXXXX")
+trap 'rm -rf "$tmp"' EXIT HUP INT TERM
+git checkout-index --all --prefix="$tmp/"
+if [ ! -x "$tmp/scripts/build-linux.sh" ] || [ ! -x "$tmp/scripts/source-hash.sh" ]; then
+	echo 'Stage the generator build scripts before the Go source.' >&2
+	exit 1
+fi
+(cd "$tmp" && ./scripts/build-linux.sh)
+
+binary=bin/blog-linux-amd64
+if git ls-files --error-unmatch -- "$binary" >/dev/null 2>&1 && git diff --quiet -- "$binary" && [ -f "$binary" ]; then
+	cp "$tmp/$binary" "$binary"
+	git add -- "$binary"
+else
+	object=$(git hash-object -w "$tmp/$binary")
+	git update-index --add --cacheinfo 100755 "$object" "$binary"
+	echo 'Staged the executable without changing the local copy.' >&2
+fi

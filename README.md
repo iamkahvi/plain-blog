@@ -1,22 +1,8 @@
 # Site
 
-Build the static site with Go 1.21 or later:
+## Local preview
 
-```sh
-go run . build
-```
-
-The build replaces `dist/`. Deploy its contents to a static host that serves directory index files.
-
-Cloudflare Workers can build and deploy the site after each push to `main`. See [Obsidian content](#obsidian-content) to configure the content source. To deploy manually, install Node.js 24 and run:
-
-```sh
-npm ci
-go run . build
-npx cf deploy
-```
-
-Start the local server:
+Start the local server with Go 1.21 or later:
 
 ```sh
 go run . dev
@@ -31,6 +17,12 @@ go test ./...
 node --test
 ```
 
+## Production deploy
+
+Push to `main` or start a build from Obsidian. Cloudflare builds and deploys the site. See [Obsidian content](#obsidian-content) to configure the content source and Git hook.
+
+For an optional local build, run `go run . build`. The build replaces `dist/`. The command reads `BLOG_CONTENT_DIR` from the environment, not `.env.local`.
+
 ## Font selection
 
 Geist Serif is the default font. Add `?font=baskerville`, `?font=geist`, or `?font=times` to a page URL to select a font. Internal links retain the selected parameter. Font selection requires JavaScript.
@@ -40,12 +32,22 @@ Geist Serif is the default font. Add `?font=baskerville`, `?font=geist`, or `?fo
 The vault folder is the content source. The Cloudflare Artifacts Sync plugin copies it to an Artifacts repository. Workers Builds fetches that repository when a push to GitHub `main` starts a build. You can also start a build from Obsidian without a GitHub push. A content sync alone does not start a build.
 
 1. Configure the plugin to sync the content folder to an Artifacts repository. Use the `main` branch. Artifacts requires a Workers Paid plan.
-2. Use `cf builds workers update` to set the build command to `go run . build-artifacts`. Keep the existing deploy command.
+2. Use `cf builds workers update` to set the build command to `./scripts/build-artifacts.sh`. Keep the existing deploy command.
 3. Use the same command to set build variables `ARTIFACTS_ACCOUNT_ID` and `ARTIFACTS_REPO`. Set `ARTIFACTS_NAMESPACE` and `ARTIFACTS_BRANCH` if their defaults do not apply.
 4. Set the build secret `ARTIFACTS_REPO_TOKEN` to a read-only repository token. Renew it before it expires.
 5. Sync the plugin, then push to GitHub `main`. Check the Worker build log for the Artifacts content revision.
 
 Build variables and secrets are separate from Worker runtime variables. The build fails if it cannot fetch Artifacts. It does not fall back to the copy in the GitHub checkout. Keep the repository token in production build secrets, not in the repository or preview builds. Replace the secret when you renew the token.
+
+### Set up the Git hook
+
+Run this command once in each clone:
+
+```sh
+git config --local core.hooksPath .githooks
+```
+
+The hook rebuilds and stages `bin/blog-linux-amd64` when a commit changes Go source, dependencies, or build scripts. It uses the staged source and preserves unstaged executable changes. For these changes, stage the files and run `git commit` without file paths or `--only`. The build uses Go 1.27.3 and downloads that toolchain if necessary. Cloudflare rejects an executable that does not match the source or build script, even if the hook is bypassed.
 
 ### Start a build from Obsidian
 

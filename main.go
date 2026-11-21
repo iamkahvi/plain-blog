@@ -1,11 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
 
+// sourceHash is set by the script that builds the Linux executable.
+var sourceHash string
+
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "source-hash" {
+		fmt.Println(sourceHash)
+		return
+	}
 	if len(os.Args) != 2 || (os.Args[1] != "build" && os.Args[1] != "build-artifacts" && os.Args[1] != "dev") {
 		log.Fatal("usage: go run . [build|build-artifacts|dev]")
 	}
