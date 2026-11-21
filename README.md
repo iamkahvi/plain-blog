@@ -19,7 +19,7 @@ node --test
 
 ## Production deploy
 
-Push to `main` or start a build from Obsidian. Cloudflare builds and deploys the site. See [Obsidian content](#obsidian-content) to configure the content source and Git hook.
+Push to `main` or start a build from Obsidian. Cloudflare builds and deploys the site with `wrangler.jsonc`. See [Obsidian content](#obsidian-content) to configure the content source and Git hook.
 
 For an optional local build, run `go run . build`. The build replaces `dist/`. The command reads `BLOG_CONTENT_DIR` from the environment, not `.env.local`.
 
@@ -32,10 +32,11 @@ Geist Serif is the default font. Add `?font=baskerville`, `?font=geist`, or `?fo
 The vault folder is the content source. The Cloudflare Artifacts Sync plugin copies it to an Artifacts repository. Workers Builds fetches that repository when a push to GitHub `main` starts a build. You can also start a build from Obsidian without a GitHub push. A content sync alone does not start a build.
 
 1. Configure the plugin to sync the content folder to an Artifacts repository. Use the `main` branch. Artifacts requires a Workers Paid plan.
-2. Use `cf builds workers update` to set the build command to `./scripts/build-artifacts.sh`. Keep the existing deploy command.
-3. Use the same command to set build variables `ARTIFACTS_ACCOUNT_ID` and `ARTIFACTS_REPO`. Set `ARTIFACTS_NAMESPACE` and `ARTIFACTS_BRANCH` if their defaults do not apply.
-4. Set the build secret `ARTIFACTS_REPO_TOKEN` to a read-only repository token. Renew it before it expires.
-5. Sync the plugin, then push to GitHub `main`. Check the Worker build log for the Artifacts content revision.
+2. In the Worker's **Settings → Build**, set the build command to `./scripts/build-artifacts.sh`.
+3. Set the deploy command to `npx wrangler deploy --config wrangler.jsonc`.
+4. Set build variables `ARTIFACTS_ACCOUNT_ID` and `ARTIFACTS_REPO`. Set `ARTIFACTS_NAMESPACE` and `ARTIFACTS_BRANCH` if their defaults do not apply.
+5. Set the build secret `ARTIFACTS_REPO_TOKEN` to a read-only repository token. Renew it before it expires.
+6. Sync the plugin, then push to GitHub `main`. Check the Worker build log for the Artifacts content revision.
 
 Build variables and secrets are separate from Worker runtime variables. The build fails if it cannot fetch Artifacts. It does not fall back to the copy in the GitHub checkout. Keep the repository token in production build secrets, not in the repository or preview builds. Replace the secret when you renew the token.
 
