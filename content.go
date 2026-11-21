@@ -97,6 +97,10 @@ func readArticle(file, url, kind string) (article, error) {
 			return a, fmt.Errorf("%s: invalid date %q", file, a.Date)
 		}
 	}
+	body, err = stripComments(body)
+	if err != nil {
+		return a, fmt.Errorf("%s: %w", file, err)
+	}
 	var rendered bytes.Buffer
 	if err := markdown.Convert(body, &rendered); err != nil {
 		return a, fmt.Errorf("%s: %w", file, err)

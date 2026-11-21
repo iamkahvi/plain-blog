@@ -92,6 +92,8 @@ If an entry has a `substack` URL, the lists link to it in a new tab. Add `?local
 
 Absolute HTTP and HTTPS links and protocol-relative web links have an icon and open in a new tab by default. This includes links to the site's own domain. An explicit link target takes precedence.
 
+Obsidian comments use `%% ... %%`. The generator removes them from rendered Markdown and fails the build if a comment is not closed. Code examples keep literal comment markers. Files with `render: raw` are copied without changes and do not remove comments.
+
 Place static files in `public/`. For example, `public/assets/photo.jpg` becomes `/assets/photo.jpg`. Markdown and its embedded HTML are trusted source content.
 
 ## Search metadata
