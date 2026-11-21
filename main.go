@@ -16,6 +16,8 @@ func main() {
 		log.Fatal(serve(".", "127.0.0.1:8080"))
 	}
 	if os.Args[1] == "build-artifacts" {
+		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+		log.Print("build process started")
 		if err := buildFromArtifacts("."); err != nil {
 			log.Fatal(err)
 		}

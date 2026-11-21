@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type artifactsConfig struct {
@@ -81,22 +82,27 @@ func buildArtifacts(root string, cfg artifactsConfig, git gitRunner) error {
 	defer os.RemoveAll(temp)
 	content := filepath.Join(temp, "content")
 	env := gitEnvironment(cfg.repoToken)
+	start := time.Now()
 	if _, err := git([]string{"clone", "--quiet", "--depth=1", "--branch=" + cfg.branch, "--", remote, content}, env); err != nil {
 		return fmt.Errorf("could not clone the Artifacts repository; check its branch and token")
 	}
+	log.Printf("cloned Artifacts content in %s", time.Since(start).Round(time.Millisecond))
 	revision, err := git([]string{"-C", content, "rev-parse", "HEAD"}, env)
 	if err != nil {
 		return fmt.Errorf("could not read the Artifacts content revision")
 	}
 	log.Printf("Artifacts content revision: %s", strings.TrimSpace(string(revision)))
+	start = time.Now()
 	files, err := buildWithContent(root, content)
 	if err != nil {
 		return err
 	}
+	log.Printf("generated site in %s", time.Since(start).Round(time.Millisecond))
+	start = time.Now()
 	if err := writeSite(root, files); err != nil {
 		return err
 	}
-	log.Printf("wrote %d files to dist/", len(files))
+	log.Printf("wrote %d files to dist/ in %s", len(files), time.Since(start).Round(time.Millisecond))
 	return nil
 }
 

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,6 +41,10 @@ func TestArtifactsConfig(t *testing.T) {
 }
 
 func TestBuildArtifacts(t *testing.T) {
+	var logs bytes.Buffer
+	previous := log.Writer()
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(previous) })
 	root := fixture(t)
 	source := filepath.Join(t.TempDir(), "source")
 	if err := os.Rename(filepath.Join(root, "content"), source); err != nil {
@@ -77,6 +83,11 @@ func TestBuildArtifacts(t *testing.T) {
 	}
 	if err := buildArtifacts(root, testArtifactsConfig(), git); err != nil {
 		t.Fatal(err)
+	}
+	for _, message := range []string{"cloned Artifacts content in ", "generated site in ", "files to dist/ in "} {
+		if !strings.Contains(logs.String(), message) {
+			t.Errorf("missing timing log %q", message)
+		}
 	}
 	page, err := os.ReadFile(filepath.Join(root, "dist/index.html"))
 	if err != nil || !strings.Contains(string(page), "From the vault.") || strings.Contains(string(page), "From the checkout.") {
