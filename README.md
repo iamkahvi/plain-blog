@@ -99,6 +99,21 @@ Obsidian comments use `%% ... %%`. The generator removes them from rendered Mark
 
 Place static files in `public/`. For example, `public/assets/photo.jpg` becomes `/assets/photo.jpg`. Markdown and its embedded HTML are trusted source content.
 
+### Mermaid diagrams
+
+Use a `mermaid` code fence in a Markdown page or post:
+
+````markdown
+```mermaid
+flowchart LR
+  A[Draft] --> B[Published]
+```
+````
+
+The browser loads [Pele](https://pele.run/) only on pages with Mermaid blocks. Diagrams adapt to the available width and use the site colors. If JavaScript is off or a diagram fails to render, the source stays visible.
+
+The site serves Pele 1.13.0 from `public/vendor/pele/1.13.0/`. To update Pele, use `npm pack pele@<version>`. Copy `dist/pele.js` and `LICENSE` to the new version directory. Update the paths in `public/mermaid.js` and `main_test.go`.
+
 ## Search metadata
 
 Pages and posts can set `description` in their front matter. If it is absent, the generator uses the first non-empty paragraph. It omits the meta description when neither is available.

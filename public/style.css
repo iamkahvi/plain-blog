@@ -94,6 +94,17 @@ a { color: var(--c-link); }
 ::selection { color: var(--c-text); background: var(--c-main-selection); }
 img, video, iframe { max-width: 100%; }
 pre { overflow-x: auto; }
+.mermaid-diagram {
+  margin-block: 1em;
+  --pele-bg: var(--c-background);
+  --pele-fg: var(--c-text);
+  --pele-line: var(--c-text);
+  --pele-muted: var(--c-text);
+  --pele-surface: var(--c-third);
+  --pele-surface-alt: var(--c-third);
+  --pele-border: var(--c-second);
+  --pele-accent: var(--c-link);
+}
 blockquote { margin-left: 1.5rem; padding-left: 1rem; border-left: 2px solid var(--c-third); }
 .articles { padding-left: 1.2rem; }
 .articles li { margin: .35rem 0; }

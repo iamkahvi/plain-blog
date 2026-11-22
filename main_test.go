@@ -18,6 +18,17 @@ func put(t *testing.T, root, name, content string) {
 	}
 }
 
+func copyPublicAssets(t *testing.T, root string, names ...string) {
+	t.Helper()
+	for _, name := range names {
+		data, err := os.ReadFile("public" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		put(t, root, "public"+name, string(data))
+	}
+}
+
 func fixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
@@ -28,13 +39,7 @@ func fixture(t *testing.T) string {
 	put(t, root, "templates/layout.html", string(layout))
 	put(t, root, "site.yaml", "domain: test.example.org\n")
 	put(t, root, "public/style.css", "body {}")
-	for _, name := range []string{"public/theme-mode.js", "public/font-mode.js", "public/newsletter-links.js"} {
-		script, err := os.ReadFile(name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		put(t, root, name, string(script))
-	}
+	copyPublicAssets(t, root, "/theme-mode.js", "/font-mode.js", "/newsletter-links.js")
 	put(t, root, "content/home/home.md", "---\ntitle: Test Blog\npermalink: /\n---\nHello **world**.\n")
 	put(t, root, "content/writing/writing.md", "---\ntitle: writing\npermalink: /writing/\n---\nWriting introduction.\n")
 	put(t, root, "content/projects/projects.md", "---\ntitle: projects\npermalink: /projects/\n---\n- https://example.com\n")
@@ -155,6 +160,30 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestMermaidAssets(t *testing.T) {
+	root := fixture(t)
+	put(t, root, "content/writing/posts/diagram.md", "---\ntitle: Diagram\ndate: 2020-01-01\n---\n```mermaid\nflowchart LR\n  A --> B\n```\n")
+	assets := []string{"/mermaid.js", "/vendor/pele/1.13.0/pele.js", "/vendor/pele/1.13.0/LICENSE"}
+	copyPublicAssets(t, root, assets...)
+
+	files, err := build(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range assets {
+		if len(files[name]) == 0 {
+			t.Errorf("missing %s", name)
+		}
+	}
+	post := string(files["/writing/diagram/"])
+	if !strings.Contains(post, "<pre><code class=\"language-mermaid\">flowchart LR\n  A --&gt; B\n</code></pre>") {
+		t.Error("Mermaid code fence is not available to the loader as plain text")
+	}
+	if !strings.Contains(post, `<script type="module" src="/mermaid.js"></script>`) {
+		t.Error("Mermaid loader is missing")
+	}
+}
+
 func TestFontAssets(t *testing.T) {
 	root := fixture(t)
 	assets := []string{
@@ -162,13 +191,7 @@ func TestFontAssets(t *testing.T) {
 		"/fonts/libre-baskerville-latin-wght-normal.woff2", "/fonts/libre-baskerville-latin-wght-italic.woff2",
 		"/fonts/libre-baskerville-latin-ext-wght-normal.woff2", "/fonts/libre-baskerville-latin-ext-wght-italic.woff2",
 	}
-	for _, name := range append([]string{"/style.css"}, assets...) {
-		data, err := os.ReadFile("public" + name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		put(t, root, "public"+name, string(data))
-	}
+	copyPublicAssets(t, root, append([]string{"/style.css"}, assets...)...)
 
 	files, err := build(root)
 	if err != nil {
