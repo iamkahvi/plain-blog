@@ -105,6 +105,10 @@ pre { overflow-x: auto; }
   --pele-border: var(--c-second);
   --pele-accent: var(--c-link);
 }
+.mermaid-diagram > svg {
+  display: block;
+  margin-inline: auto;
+}
 blockquote { margin-left: 1.5rem; padding-left: 1rem; border-left: 2px solid var(--c-third); }
 .articles { padding-left: 1.2rem; }
 .articles li { margin: .35rem 0; }
