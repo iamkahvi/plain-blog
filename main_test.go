@@ -39,7 +39,7 @@ func fixture(t *testing.T) string {
 	put(t, root, "templates/layout.html", string(layout))
 	put(t, root, "site.yaml", "domain: test.example.org\n")
 	put(t, root, "public/style.css", "body {}")
-	copyPublicAssets(t, root, "/theme-mode.js", "/font-mode.js", "/newsletter-links.js")
+	copyPublicAssets(t, root, "/favicon.ico", "/theme-mode.js", "/font-mode.js", "/newsletter-links.js")
 	put(t, root, "content/home/home.md", "---\ntitle: Test Blog\npermalink: /\n---\nHello **world**.\n")
 	put(t, root, "content/writing/writing.md", "---\ntitle: writing\npermalink: /writing/\n---\nWriting introduction.\n")
 	put(t, root, "content/projects/projects.md", "---\ntitle: projects\npermalink: /projects/\n---\n- https://example.com\n")
@@ -65,7 +65,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/style.css", "/theme-mode.js", "/font-mode.js", "/newsletter-links.js", "/assets/photo.txt"} {
+	for _, url := range []string{"/", "/projects/", "/pronounce/", "/book-shelf/", "/writing/", "/new-path/", "/resume.md", "/writing/first/", "/writing/latest/", "/writing/february/", "/favicon.ico", "/style.css", "/theme-mode.js", "/font-mode.js", "/newsletter-links.js", "/assets/photo.txt"} {
 		if _, ok := files[url]; !ok {
 			t.Errorf("missing %s", url)
 		}
@@ -130,6 +130,9 @@ func TestBuild(t *testing.T) {
 		t.Error("theme button should appear only on the home page")
 	}
 	for _, page := range []string{home, writing, post} {
+		if !strings.Contains(page, `<link rel="icon" href="/favicon.ico">`) {
+			t.Error("favicon link is missing")
+		}
 		if !strings.Contains(page, `<script src="/theme-mode.js"></script>`) {
 			t.Error("theme script is missing")
 		}
