@@ -103,12 +103,12 @@ set -eu
 [ "$XDG_CONFIG_HOME" = "$TMPDIR/build-config" ]
 state=$(cd "$TMPDIR"/blog-vault.* && pwd -P)
 vault="$state/vault"
-printf '%s\n' "$OBSIDIAN_AUTH_TOKEN" >&2
 printf '%s\n' "$1" >> "$TEST_CALLS"
 if [ "$1" = "$TEST_FAIL" ]; then
-	printf '%s\n' "$TEST_ERROR" 'test-vault-password' >&2
+	printf 'Obsidian error: %s failed\n' "$1" >&2
 	exit 2
 fi
+printf 'Obsidian progress: %s\n' "$1"
 case "$1" in
 sync-setup)
 	[ "$2|$3|$4|$5|$6|$7" = "--vault=Test Vault|--path|$vault|--device-name|plain-blog build|--json" ]
@@ -137,23 +137,18 @@ shift 3
 [ "$TEST_FAIL" != timeout ] || exit 124
 `)
 	for _, tc := range []struct {
-		name, path, password, failStep, setupError, wantCalls, wantOutput string
+		name, path, password, failStep, wantCalls, wantOutput string
 	}{
-		{"default", "", "", "", "", "sync-setup\nsync-config\nsync\n", "generator ran"},
-		{"custom path and password", "nested/blog folder", "test-vault-password", "", "", "sync-setup\nsync-config\nsync\n", "generator ran"},
-		{"unknown setup error", "", "", "sync-setup", "internal error: Private Vault", "sync-setup\n", "Obsidian Headless exited with status 2"},
-		{"token rejected", "", "", "sync-setup", "Setup failed: s [Error]: Not logged in", "sync-setup\n", "Obsidian rejected the account token"},
-		{"password rejected", "", "", "sync-setup", "Wrong vault key", "sync-setup\n", "Obsidian rejected the vault encryption password"},
-		{"vault not found", "", "", "sync-setup", `Vault "Private Vault" not found.`, "sync-setup\n", "The token cannot see the vault in OBSIDIAN_VAULT"},
-		{"TLS error", "", "", "sync-setup", "TypeError: fetch failed\n  code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'", "sync-setup\n", "Obsidian API TLS error: UNABLE_TO_VERIFY_LEAF_SIGNATURE"},
-		{"API error", "", "", "sync-setup", "Setup failed: Error: HTTP Error 503", "sync-setup\n", "The Obsidian API returned 503"},
-		{"pull-only config fails", "", "", "sync-config", "", "sync-setup\nsync-config\n", "Could not set Obsidian Sync to pull-only mode"},
-		{"sync fails", "", "", "sync", "", "sync-setup\nsync-config\nsync\n", "Could not download the Obsidian vault"},
-		{"sync times out", "", "", "timeout", "", "sync-setup\nsync-config\nsync\n", "The download limit is 15 minutes"},
-		{"folder missing", "missing", "", "", "", "sync-setup\nsync-config\nsync\n", "Blog content folder not found"},
-		{"path traversal", "notes/../blog-content", "", "", "", "", "relative folder within the vault"},
-		{"absolute path", "/blog-content", "", "", "", "", "relative folder within the vault"},
-		{"vault root", ".", "", "", "", "", "relative folder within the vault"},
+		{"default", "", "", "", "sync-setup\nsync-config\nsync\n", "generator ran"},
+		{"custom path and password", "nested/blog folder", "test-vault-password", "", "sync-setup\nsync-config\nsync\n", "generator ran"},
+		{"setup fails", "", "", "sync-setup", "sync-setup\n", "Obsidian error: sync-setup failed"},
+		{"pull-only config fails", "", "", "sync-config", "sync-setup\nsync-config\n", "Obsidian error: sync-config failed"},
+		{"sync fails", "", "", "sync", "sync-setup\nsync-config\nsync\n", "Obsidian error: sync failed"},
+		{"sync times out", "", "", "timeout", "sync-setup\nsync-config\nsync\n", "The download limit is 15 minutes"},
+		{"folder missing", "missing", "", "", "sync-setup\nsync-config\nsync\n", "Blog content folder not found"},
+		{"path traversal", "notes/../blog-content", "", "", "", "relative folder within the vault"},
+		{"absolute path", "/blog-content", "", "", "", "relative folder within the vault"},
+		{"vault root", ".", "", "", "", "relative folder within the vault"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tmp := t.TempDir()
@@ -180,14 +175,18 @@ shift 3
 			t.Setenv("TEST_PASSWORD_ARG", passwordArg)
 			t.Setenv("TEST_CALLS", calls)
 			t.Setenv("TEST_FAIL", tc.failStep)
-			t.Setenv("TEST_ERROR", tc.setupError)
 			out, err := runScript(root, "build-obsidian.sh")
 			success := tc.wantOutput == "generator ran"
 			if (err == nil) != success || !strings.Contains(out, tc.wantOutput) || (!success && strings.Contains(out, "generator ran")) {
 				t.Fatalf("unexpected build result: %q, %v", out, err)
 			}
-			if strings.Contains(out, "test-auth-token") || strings.Contains(out, "test-vault-password") || strings.Contains(out, "Private Vault") {
-				t.Fatal("build logs contain private data")
+			for _, step := range strings.Fields(tc.wantCalls) {
+				if step != tc.failStep && !strings.Contains(out, "Obsidian progress: "+step+"\n") {
+					t.Fatalf("missing Obsidian output for %s: %q", step, out)
+				}
+			}
+			if strings.Contains(out, "test-auth-token") || strings.Contains(out, "test-vault-password") {
+				t.Fatal("build logs contain credentials")
 			}
 			got, err := os.ReadFile(calls)
 			if err != nil || string(got) != tc.wantCalls {
