@@ -97,6 +97,7 @@ esac
 `)
 	putExecutable(t, root, "node_modules/.bin/ob", `#!/bin/sh
 set -eu
+[ "${TEST_NODE_RESOLVED:-}" = 1 ]
 [ "$OBSIDIAN_AUTH_TOKEN" = 'test-auth-token' ]
 [ -z "${OBSIDIAN_VAULT_PASSWORD+x}" ]
 [ "$XDG_CONFIG_HOME" = "$HOME/config" ]
@@ -127,6 +128,18 @@ sync)
 	;;
 *) exit 1 ;;
 esac
+`)
+	putExecutable(t, root, "tools/node", `#!/bin/sh
+set -eu
+[ "$HOME" = "$TEST_BUILD_HOME" ]
+[ "$*" = '-p process.execPath' ]
+printf '%s\n' "$(dirname "$0")/node-real"
+`)
+	putExecutable(t, root, "tools/node-real", `#!/bin/sh
+set -eu
+[ "$HOME" != "$TEST_BUILD_HOME" ]
+export TEST_NODE_RESOLVED=1
+exec "$@"
 `)
 	putExecutable(t, root, "tools/timeout", `#!/bin/sh
 set -eu
@@ -167,6 +180,7 @@ shift 3
 				passwordArg = "--password=" + tc.password
 			}
 			t.Setenv("TMPDIR", tmp)
+			t.Setenv("TEST_BUILD_HOME", os.Getenv("HOME"))
 			t.Setenv("PATH", filepath.Join(root, "tools")+string(os.PathListSeparator)+os.Getenv("PATH"))
 			t.Setenv("BLOG_CONTENT_DIR", "/not/the/content/source")
 			t.Setenv("OBSIDIAN_AUTH_TOKEN", "test-auth-token")
@@ -182,6 +196,9 @@ shift 3
 			success := tc.wantOutput == "generator ran"
 			if (err == nil) != success || !strings.Contains(out, tc.wantOutput) || (!success && strings.Contains(out, "generator ran")) {
 				t.Fatalf("unexpected build result: %q, %v", out, err)
+			}
+			if tc.wantCalls != "" && !strings.Contains(out, "The Node.js launcher fails with an isolated HOME.") {
+				t.Fatalf("missing Node.js launcher diagnostic: %q", out)
 			}
 			if strings.Contains(out, "test-auth-token") || strings.Contains(out, "test-vault-password") || strings.Contains(out, "Private Vault") {
 				t.Fatal("build logs contain private data")
