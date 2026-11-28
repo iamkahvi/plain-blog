@@ -16,8 +16,6 @@ fi
 
 cli="$PWD/node_modules/.bin/ob"
 [ -x "$cli" ] || fail 'Install Obsidian Headless with npm ci.'
-# Resolve the executable before the temporary HOME hides runtime manager state.
-node=$(node -p 'process.execPath' 2>/dev/null) || fail 'Could not start Node.js.'
 : "${OBSIDIAN_AUTH_TOKEN:?Set OBSIDIAN_AUTH_TOKEN before the build.}"
 : "${OBSIDIAN_VAULT:?Set OBSIDIAN_VAULT before the build.}"
 export OBSIDIAN_AUTH_TOKEN
@@ -32,9 +30,9 @@ trap 'exit 1' HUP INT TERM
 state=$(cd "$scratch" && pwd -P)
 vault="$state/vault"
 
-# Keep the sync state out of the checkout and private vault paths out of build logs.
+# Keep private vault paths out of build logs.
 run_sync_command() {
-	HOME="$state" XDG_CONFIG_HOME="$state/config" "$@" </dev/null >/dev/null
+	"$@" </dev/null >/dev/null
 }
 
 # Report only fixed diagnostics. Headless errors can contain vault details.
@@ -68,17 +66,14 @@ if [ -n "${OBSIDIAN_VAULT_PASSWORD:-}" ]; then
 	set -- "$@" "--password=$OBSIDIAN_VAULT_PASSWORD"
 fi
 unset OBSIDIAN_VAULT_PASSWORD
-if [ "$(command -v node)" != "$node" ] && ! run_sync_command node --version 2>/dev/null; then
-	printf '%s\n' 'The Node.js launcher fails with an isolated HOME. Use the Node.js executable directly.'
-fi
 setup_log="$state/setup.err"
-run_sync_command "$node" "$cli" "$@" 2>"$setup_log" || fail_sync_setup "$?" "$setup_log"
+run_sync_command "$cli" "$@" 2>"$setup_log" || fail_sync_setup "$?" "$setup_log"
 rm -f "$setup_log"
 set --
-run_sync_command "$node" "$cli" sync-config --path "$vault" --mode pull-only --json 2>/dev/null || fail 'Could not set Obsidian Sync to pull-only mode.'
+run_sync_command "$cli" sync-config --path "$vault" --mode pull-only --json 2>/dev/null || fail 'Could not set Obsidian Sync to pull-only mode.'
 printf '%s\n' 'Obsidian Sync download started.'
 # Headless Sync can retry connection failures until it receives a stop signal.
-run_sync_command timeout -k 5s 15m "$node" "$cli" sync --path "$vault" 2>/dev/null || fail 'Could not download the Obsidian vault. The download limit is 15 minutes.'
+run_sync_command timeout -k 5s 15m "$cli" sync --path "$vault" 2>/dev/null || fail 'Could not download the Obsidian vault. The download limit is 15 minutes.'
 unset OBSIDIAN_AUTH_TOKEN
 
 if ! content_path=$(cd "$vault/$content" 2>/dev/null && pwd -P) || [ "$content_path" != "$vault/$content" ]; then

@@ -40,7 +40,7 @@ Leave `OBSIDIAN_CONTENT_DIR` unset to use `blog-content/`. To use a different fo
 
 The token gives access to the Obsidian account, not only the blog folder. Do not add these secrets to Worker runtime variables, preview builds, or the repository.
 
-The build fails if Obsidian Sync fails or if the blog folder does not exist. The build deletes its temporary vault and sync state when it exits.
+The build fails if Obsidian Sync fails or if the blog folder does not exist. The build script deletes the downloaded vault when it exits.
 
 If you switch from Artifacts, keep the existing Deploy Hook for `plain-blog` on `main`. You do not need to change the Artifacts Sync setup.
 
