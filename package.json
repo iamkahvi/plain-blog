@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
+    "obsidian-headless": "0.0.14",
     "wrangler": "4.162.0"
   }
 }
